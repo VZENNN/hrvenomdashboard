@@ -5,7 +5,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql" // atau mysql/sqlite sesuai setupmu
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -23,7 +23,7 @@ model User {
   gender      Gender
   status      EmployeeStatus @default(ACTIVE)
   avatarUrl   String?
-  joinDate    DateTime?      // Tanggal Mulai Bekerja
+  joinDate    DateTime?
   
   // Relasi Departemen & Jabatan
   departmentId String?
@@ -63,13 +63,13 @@ model KpiCriteria {
   id            String      @id @default(cuid())
   
   // Contoh: "Kedisiplinan Kerja" atau "Development Project"
-  category      String      // Grouping (PENTING untuk Section C PDF)
-  title         String      // Judul Indikator / Objektif
-  description   String?     // Definisi lengkap / Indikator detail
+  category      String      
+  title         String      
+  description   String?     
   
-  type          KpiType     @default(BEHAVIORAL) // BEHAVIORAL (Hal C) atau TECHNICAL (Hal D)
+  type          KpiType     @default(BEHAVIORAL)
   
-  // Jika null = kriteria umum semua karyawan. Jika diisi = khusus dept tertentu
+  // kalau null = kriteria umum semua karyawan. Jika diisi = khusus dept tertentu
   departmentId  String?     
   department    Department? @relation(fields: [departmentId], references: [id])
 
@@ -89,7 +89,7 @@ model Evaluation {
   userId      String   // Karyawan yang dinilai
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
-  appraiserId String   // Siapa penilainya saat itu? (PENTING: karena atasan bisa ganti)
+  appraiserId String   // Siapa penilainya
   appraiser   User     @relation("Appraiser", fields: [appraiserId], references: [id])
   
   month       Int
@@ -120,13 +120,13 @@ model EvaluationItem {
   criteria      KpiCriteria @relation(fields: [criteriaId], references: [id])
   
   // Data Realisasi (Sesuai PDF Section D)
-  target        String?     // Contoh: "100%", "Selesai 5 Modul"
-  actual        String?     // Contoh: "90%", "Selesai 4 Modul"
+  target        String?     
+  actual        String?     
   
-  weight        Float       // Bobot item ini (Contoh: 30% untuk Development)
-  score         Float       // Nilai Skala 1-5 (Contoh: 3.0)
+  weight        Float       
+  score         Float       
 
-  comment       String?     // Komentar per item (Kolom paling kanan PDF)
+  comment       String?     
 }
 
 // ==============================
@@ -150,6 +150,6 @@ enum EmployeeStatus {
 }
 
 enum KpiType {
-  BEHAVIORAL  // Untuk Bagian C (Perilaku/General)
-  TECHNICAL   // Untuk Bagian D (KPI/Project)
+  BEHAVIORAL  // Untuk Bagian C (General)
+  TECHNICAL   // Untuk Bagian D (KPI)
 }

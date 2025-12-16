@@ -5,7 +5,7 @@ import * as bcrypt from 'bcrypt'
 const prisma = new PrismaClient()
 
 async function main() {
-  console.log('🌱 Start seeding Real Data...')
+  console.log('Start seeding Real Data...')
 
   // 1. Reset Database
   await prisma.evaluationItem.deleteMany()
@@ -48,7 +48,7 @@ async function main() {
         title: item.title,
         category: item.category,
         type: KpiType.BEHAVIORAL,
-        departmentId: null // NULL = GLOBAL
+        departmentId: null
       }
     })
   }
@@ -83,7 +83,7 @@ async function main() {
   // 6. BUAT USER (DATA KARYAWAN SESUAI PDF)
   // ==========================================
 
-  // --- BIG BOSS (GM Finance) ---
+  // --- GM Finance ---
   // Penilai untuk Laura & Lim Diana
   const julia = await prisma.user.create({
     data: {
@@ -162,12 +162,12 @@ async function main() {
       employeeId: 'SSA165',
       name: 'Safa',
       position: 'Kepala Gudang',
-      departmentId: deptWarehouse.id, // Beda Departemen
+      departmentId: deptWarehouse.id,
       role: Role.EMPLOYEE,
-      gender: Gender.MALE, // Asumsi
+      gender: Gender.FEMALE,
       status: EmployeeStatus.ACTIVE,
       password,
-      managerId: laura.id, // Atasannya Laura (Cross Dept)
+      managerId: laura.id,
       joinDate: new Date('2023-09-11')
     }
   })
@@ -176,9 +176,6 @@ async function main() {
   // ==========================================
   // 7. SIMULASI PENILAIAN (EVALUATIONS)
   // ==========================================
-
-  // --- SIMULASI NILAI NUR ANNISA (Sesuai PDF Page 7-8) ---
-  // Total C: 3.68, Total D: 3.25, Final: 3.42
   
   // Ambil KPI Behavioral Global
   const globalKpis = await prisma.kpiCriteria.findMany({ where: { type: KpiType.BEHAVIORAL } })
@@ -187,7 +184,7 @@ async function main() {
     data: {
       userId: nurAnnisa.id,
       appraiserId: limDiana.id,
-      month: 10, // Oktober (Akhir periode)
+      month: 10,
       year: 2025,
       behaviorScore: 3.68,
       technicalScore: 3.25,
@@ -195,25 +192,20 @@ async function main() {
       feedback: 'Kinerja cukup baik, tingkatkan inisiatif.',
       items: {
         create: [
-            // Bagian C (Behavioral) - Pura-pura input
-            { criteriaId: globalKpis[0].id, score: 4, weight: 0 }, // Disiplin
-            { criteriaId: globalKpis[1].id, score: 4, weight: 0 }, // Kepatuhan
-            // Bagian D (Technical) - Sesuai PDF Page 8
+            { criteriaId: globalKpis[0].id, score: 4, weight: 0 },
+            { criteriaId: globalKpis[1].id, score: 4, weight: 0 },
             { 
-                criteriaId: kpiFinanceInvoicing.id, // Invoicing
-                target: '100%', actual: '80', weight: 50, score: 3 // Bobot 50%, Nilai 3
+                criteriaId: kpiFinanceInvoicing.id,
+                target: '100%', actual: '80', weight: 50, score: 3
             },
             { 
-                criteriaId: kpiFinanceCompliance.id, // Compliance
-                target: '100%', actual: '96', weight: 25, score: 4 // Bobot 25%, Nilai 4
+                criteriaId: kpiFinanceCompliance.id,
+                target: '100%', actual: '96', weight: 25, score: 4
             }
         ]
       }
     }
   })
-
-  // --- SIMULASI NILAI SAFA (Warehouse) (Sesuai PDF Page 17-18) ---
-  // Total C: 2.92, Total D: 2.5, Final: 2.66
   
   await prisma.evaluation.create({
     data: {
@@ -227,7 +219,6 @@ async function main() {
       feedback: 'Perlu peningkatan di manajemen stok.',
       items: {
         create: [
-            // Bagian D (Technical) - Sesuai PDF Page 18
             { 
                 criteriaId: kpiWhStock.id, // Stock Balance
                 target: '100%', actual: '70', weight: 25, score: 2 
@@ -241,7 +232,7 @@ async function main() {
     }
   })
 
-  console.log('✅ Seeding Real Data Finance & Warehouse Selesai!')
+  console.log('Seeding Real Data Finance & Warehouse Selesai!')
 }
 
 main()
