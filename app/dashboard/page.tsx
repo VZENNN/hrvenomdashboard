@@ -1,40 +1,139 @@
-import Sidebar from "@/components/sidebar";
+import { prisma } from "@/lib/prisma";
+import { User, Gender } from "@prisma/client";
+import { Trophy, Users, UserCheck } from "lucide-react";
 
-export default function DashboardPage() {
+async function getDashboardData() {
+  const totalEmployees = await prisma.user.count({ where: { status: "ACTIVE" } });
+
+  const maleCount = await prisma.user.count({
+    where: { status: "ACTIVE", gender: "MALE" }
+  });
+
+  const femaleCount = await prisma.user.count({
+    where: { status: "ACTIVE", gender: "FEMALE" }
+  });
+
+  // Top Scorer Logic (Current Month)
+  const currentDate = new Date();
+  const topScorerEvaluation = await prisma.evaluation.findFirst({
+    where: {
+      month: currentDate.getMonth() + 1, // JS Month is 0-indexed
+      year: currentDate.getFullYear()
+    },
+    orderBy: {
+      finalScore: 'desc'
+    },
+    include: {
+      user: {
+        include: { department: true }
+      }
+    }
+  });
+
+  return { totalEmployees, maleCount, femaleCount, topScorer: topScorerEvaluation };
+}
+
+export default async function DashboardPage() {
+  const { totalEmployees, maleCount, femaleCount, topScorer } = await getDashboardData();
+
   return (
-    <div className="flex">
-      <Sidebar />
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Dashboard Overview</h1>
+        <p className="text-slate-500 dark:text-slate-400 mt-2">Welcome back to VENOM HR System.</p>
+      </div>
 
-      <main className="flex-1 p-8">
-        <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <StatCard
+          title="Total Employees"
+          value={totalEmployees}
+          icon={Users}
+          color="blue"
+          subtext="Active Personnel"
+        />
+        <StatCard
+          title="Male Employees"
+          value={maleCount}
+          icon={UserCheck}
+          color="indigo"
+          subtext={`${((maleCount / totalEmployees) * 100 || 0).toFixed(0)}% of workforce`}
+        />
+        <StatCard
+          title="Female Employees"
+          value={femaleCount}
+          icon={UserCheck}
+          color="pink"
+          subtext={`${((femaleCount / totalEmployees) * 100 || 0).toFixed(0)}% of workforce`}
+        />
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-white p-6 rounded shadow">
-            <p className="text-gray-500">Total Karyawan</p>
-            <h2 className="text-3xl font-bold">120</h2>
+      {/* Top Scorer Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Top Scorer Card */}
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 p-8 relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-10">
+            <Trophy size={120} />
           </div>
 
-          <div className="bg-white p-6 rounded shadow">
-            <p className="text-gray-500">Pria</p>
-            <h2 className="text-3xl font-bold">70</h2>
-          </div>
+          <div className="relative z-10">
+            <div className="flex items-center gap-2 mb-6 text-amber-500 font-bold uppercase tracking-wider text-sm">
+              <Trophy size={18} /> Employee of the Month
+            </div>
 
-          <div className="bg-white p-6 rounded shadow">
-            <p className="text-gray-500">Wanita</p>
-            <h2 className="text-3xl font-bold">50</h2>
-          </div>
-
-          <div className="bg-white p-6 rounded shadow flex flex-col items-center">
-            <p className="text-gray-500 mb-2">Top Scorer Bulan Ini</p>
-            <img
-              src="/avatar.png"
-              className="w-16 h-16 rounded-full mb-2"
-            />
-            <h3 className="font-semibold">Andi Wijaya</h3>
-            <span className="text-sm text-green-600">95 Poin</span>
+            {topScorer ? (
+              <div className="flex items-center gap-6">
+                <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-amber-400 to-amber-600 flex items-center justify-center text-white text-3xl font-bold shadow-lg ring-4 ring-amber-100 dark:ring-amber-900">
+                  {topScorer.user.name.charAt(0)}
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-1">{topScorer.user.name}</h3>
+                  <p className="text-slate-500 dark:text-slate-400 mb-3">{topScorer.user.position} • {topScorer.user.department?.name}</p>
+                  <div className="inline-block bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-4 py-1 rounded-full font-bold text-lg">
+                    Score: {topScorer.finalScore.toFixed(2)}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-slate-500 italic py-8">
+                No evaluations found for this month yet.
+              </div>
+            )}
           </div>
         </div>
-      </main>
+
+        {/* Quick Actions or Chart (Placeholder) */}
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 p-8 flex flex-col justify-center items-center text-center">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-3">Performance Trends</h3>
+          <p className="text-slate-500 text-sm mb-6">Monthly average performance across all departments.</p>
+          <div className="w-full h-40 bg-slate-50 dark:bg-slate-900 rounded-xl flex items-center justify-center border border-dashed border-slate-300">
+            <span className="text-slate-400 text-sm">Chart Visualization Coming Soon</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StatCard({ title, value, icon: Icon, color, subtext }: any) {
+  const colorStyles: any = {
+    blue: "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400",
+    indigo: "bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400",
+    pink: "bg-pink-50 text-pink-600 dark:bg-pink-900/20 dark:text-pink-400",
+  };
+
+  return (
+    <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-md transition-shadow">
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">{title}</p>
+          <h3 className="text-3xl font-bold text-slate-900 dark:text-white">{value}</h3>
+          {subtext && <p className="text-xs text-slate-400 mt-2">{subtext}</p>}
+        </div>
+        <div className={`p-3 rounded-xl ${colorStyles[color] || colorStyles.blue}`}>
+          <Icon size={24} />
+        </div>
+      </div>
     </div>
   );
 }
