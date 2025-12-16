@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { User, Department, KpiCriteria, KpiType } from '@prisma/client';
 import { getEvaluationMetadata, createEvaluation } from '@/app/actions/evaluations';
+import { useEvaluationScoring } from '@/hooks/useEvaluation';
 import { Loader2, Save, Calculator, Trophy } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -29,12 +30,9 @@ export default function EvaluationWizard({ users, currentUserId }: Props) {
     const [behavioralKpis, setBehavioralKpis] = useState<KpiCriteria[]>([]);
     const [technicalKpis, setTechnicalKpis] = useState<KpiCriteria[]>([]);
 
-    // Form State
-    const [scores, setScores] = useState<Record<string, { target: string, actual: string, score: number, weight: number, comment: string }>>({});
+    // Derived State (Hook)
+    const { scores, setScores, updateScore, results: finalResult } = useEvaluationScoring(behavioralKpis, technicalKpis);
     const [feedback, setFeedback] = useState('');
-
-    // Derived State (Real-time Calc)
-    const [finalResult, setFinalResult] = useState({ behavior: 0, technical: 0, final: 0, grade: '' });
 
     const handleStart = async () => {
         if (!selectedUserId) return;
@@ -47,11 +45,9 @@ export default function EvaluationWizard({ users, currentUserId }: Props) {
 
             // Initialize Scores
             const initialScores: any = {};
-            // Behavior: Default score 3, Weight 0 (not used), Target "-", Actual "-"
             data.behavioral.forEach(k => {
                 initialScores[k.id] = { target: '-', actual: '-', score: 3, weight: 0, comment: '' };
             });
-            // Technical: Default target 100%, weight 20% (distribute evenly or use default), score 3
             const defaultWeight = data.technical.length > 0 ? (100 / data.technical.length) : 0;
             data.technical.forEach(k => {
                 initialScores[k.id] = { target: '100%', actual: '', score: 0, weight: defaultWeight, comment: '' };
@@ -64,59 +60,6 @@ export default function EvaluationWizard({ users, currentUserId }: Props) {
         } finally {
             setLoading(false);
         }
-    };
-
-    // Calculation Logic
-    useEffect(() => {
-        // Behavior Avg
-        const bIds = behavioralKpis.map(k => k.id);
-        const bSum = bIds.reduce((acc, id) => acc + (scores[id]?.score || 0), 0);
-        const bAvg = bIds.length ? bSum / bIds.length : 0;
-
-        // Technical Weighted Sum
-        const tIds = technicalKpis.map(k => k.id);
-        let tSum = 0;
-        tIds.forEach(id => {
-            const item = scores[id];
-            if (item) {
-                tSum += (item.weight / 100) * item.score;
-            }
-        });
-
-        // Final Formula
-        // C (40%) + D (60%)
-        const final = (bAvg * 0.4) + (tSum * 0.6);
-
-        // Grade
-        let grade = '';
-        if (final <= 1.50) grade = 'Poor';
-        else if (final <= 2.50) grade = 'Unsatisfactory';
-        else if (final <= 3.50) grade = 'Fair/Need Improvement';
-        else if (final <= 4.50) grade = 'Good/Meet Expectation';
-        else grade = 'Very Good/Exceed Expectation';
-
-        setFinalResult({ behavior: bAvg, technical: tSum, final, grade });
-    }, [scores, behavioralKpis, technicalKpis]);
-
-    const updateScore = (id: string, field: string, value: any) => {
-        setScores(prev => {
-            const newItem = { ...prev[id], [field]: value };
-
-            // Auto-calculate score for technical if Actual changes
-            // Logic: >101% = 5, 95.1-100 = 4, 75.1-95 = 3, 50.1-75 = 2, <50 = 1
-            if (field === 'actual' && technicalKpis.find(k => k.id === id)) {
-                const num = parseFloat(value); // Assume user types number "90"
-                if (!isNaN(num)) {
-                    if (num > 101) newItem.score = 5;
-                    else if (num > 95) newItem.score = 4;
-                    else if (num > 75) newItem.score = 3;
-                    else if (num > 50) newItem.score = 2;
-                    else newItem.score = 1;
-                }
-            }
-
-            return { ...prev, [id]: newItem };
-        });
     };
 
     const handleSubmit = async () => {
