@@ -1,14 +1,155 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// prisma/schema.prisma
 
 generator client {
-  provider = "prisma-client"
-  output   = "../app/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==============================
+// 1. DATA KARYAWAN
+// ==============================
+
+model User {
+  id          String      @id @default(cuid())
+  employeeId  String      @unique // NIK (contoh: SSA047)
+  email       String      @unique
+  password    String
+  name        String
+  
+  gender      Gender
+  status      EmployeeStatus @default(ACTIVE)
+  avatarUrl   String?
+  joinDate    DateTime?
+  
+  // Relasi Departemen & Jabatan
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+  position     String      // Jabatan (misal: Staff, Manager Retail)
+
+  role        Role        @default(EMPLOYEE)
+  
+  // Atasan (Penilai Default)
+  managerId   String?
+  manager     User?       @relation("UserManager", fields: [managerId], references: [id])
+  subordinates User[]     @relation("UserManager")
+
+  evaluations Evaluation[] // Nilai yang dia terima
+  appraisals  Evaluation[] @relation("Appraiser") // Nilai yang dia buat (sebagai atasan)
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model Department {
+  id          String   @id @default(cuid())
+  name        String   @unique 
+  description String?
+
+  users       User[]
+  kpiCriteria KpiCriteria[] 
+
+  createdAt   DateTime @default(now())
+}
+
+// ==============================
+// 2. MASTER DATA KRITERIA (TEMPLATE)
+// ==============================
+
+model KpiCriteria {
+  id            String      @id @default(cuid())
+  
+  // Contoh: "Kedisiplinan Kerja" atau "Development Project"
+  category      String      
+  title         String      
+  description   String?     
+  
+  type          KpiType     @default(BEHAVIORAL)
+  
+  // kalau null = kriteria umum semua karyawan. Jika diisi = khusus dept tertentu
+  departmentId  String?     
+  department    Department? @relation(fields: [departmentId], references: [id])
+
+  // Bobot Default (Opsional, bisa di override di EvaluationItem)
+  defaultWeight Int         @default(0) 
+
+  evaluationItems EvaluationItem[]
+}
+
+// ==============================
+// 3. TRANSAKSI PENILAIAN (RAPORT)
+// ==============================
+
+model Evaluation {
+  id          String   @id @default(cuid())
+  
+  userId      String   // Karyawan yang dinilai
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  appraiserId String   // Siapa penilainya
+  appraiser   User     @relation("Appraiser", fields: [appraiserId], references: [id])
+  
+  month       Int
+  year        Int
+  
+  // Hasil Akhir (Section E PDF)
+  behaviorScore Float    // Rata-rata Bagian C (Skala 1-5)
+  technicalScore Float   // Total Bobot Bagian D (Skala 1-5)
+  finalScore    Float    // (Behavior * 40%) + (Technical * 60%)
+  
+  feedback    String?  @db.Text
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  items       EvaluationItem[]
+
+  @@unique([userId, month, year])
+}
+
+model EvaluationItem {
+  id            String      @id @default(cuid())
+  
+  evaluationId  String
+  evaluation    Evaluation  @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  
+  criteriaId    String
+  criteria      KpiCriteria @relation(fields: [criteriaId], references: [id])
+  
+  // Data Realisasi (Sesuai PDF Section D)
+  target        String?     
+  actual        String?     
+  
+  weight        Float       
+  score         Float       
+
+  comment       String?     
+}
+
+// ==============================
+// 4. ENUMS
+// ==============================
+
+enum Role {
+  ADMIN
+  MANAGER
+  EMPLOYEE
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum KpiType {
+  BEHAVIORAL  // Untuk Bagian C (General)
+  TECHNICAL   // Untuk Bagian D (KPI)
 }
