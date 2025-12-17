@@ -69,9 +69,11 @@ model KpiCriteria {
   
   type          KpiType     @default(BEHAVIORAL)
   
-  // kalau null = kriteria umum semua karyawan. Jika diisi = khusus dept tertentu
   departmentId  String?     
   department    Department? @relation(fields: [departmentId], references: [id])
+
+  // Jabatan Spesifik (Opsional). Jika null = berlaku satu departemen
+  position      String?
 
   // Bobot Default (Opsional, bisa di override di EvaluationItem)
   defaultWeight Int         @default(0) 
