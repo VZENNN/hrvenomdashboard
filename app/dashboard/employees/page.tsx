@@ -1,24 +1,39 @@
 
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
-import { Plus, Search, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Search as SearchIcon, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import DeleteEmployeeButton from '@/components/employees/DeleteEmployeeButton';
 
-export default async function EmployeesPage({ searchParams }: { searchParams: { q?: string } }) {
-    const query = searchParams?.q || '';
+import Pagination from '@/components/ui/Pagination';
+
+import Search from '@/components/ui/Search';
+
+export default async function EmployeesPage({ searchParams }: { searchParams: Promise<{ q?: string; page?: string }> }) {
+    const params = await searchParams;
+    const query = params?.q || '';
+    const currentPage = Number(params?.page) || 1;
+    const itemsPerPage = 10;
+
+    const where = {
+        OR: [
+            { name: { contains: query, mode: 'insensitive' as const } },
+            { employeeId: { contains: query, mode: 'insensitive' as const } }
+        ]
+    };
+
+    const totalItems = await prisma.user.count({ where });
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
 
     const employees = await prisma.user.findMany({
-        where: {
-            OR: [
-                { name: { contains: query, mode: 'insensitive' } },
-                { employeeId: { contains: query, mode: 'insensitive' } }
-            ]
-        },
+        where,
         include: {
             department: true
         },
         orderBy: {
             createdAt: 'desc'
-        }
+        },
+        skip: (currentPage - 1) * itemsPerPage,
+        take: itemsPerPage
     });
 
     return (
@@ -38,15 +53,7 @@ export default async function EmployeesPage({ searchParams }: { searchParams: { 
 
             {/* Search Bar */}
             <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
-                <form className="relative max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                    <input
-                        name="q"
-                        defaultValue={query}
-                        placeholder="Search by name or ID..."
-                        className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-slate-900"
-                    />
-                </form>
+                <Search placeholder="Search by name or ID..." />
             </div>
 
             {/* Table */}
@@ -89,12 +96,10 @@ export default async function EmployeesPage({ searchParams }: { searchParams: { 
                                     </td>
                                     <td className="p-4 text-right">
                                         <div className="flex justify-end gap-2">
-                                            <button className="p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white transition">
+                                            <Link href={`/dashboard/employees/${emp.id}/edit`} className="p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white transition">
                                                 <Pencil size={16} />
-                                            </button>
-                                            <button className="p-2 text-slate-400 hover:text-red-600 transition">
-                                                <Trash2 size={16} />
-                                            </button>
+                                            </Link>
+                                            <DeleteEmployeeButton id={emp.id} />
                                         </div>
                                     </td>
                                 </tr>
@@ -103,6 +108,9 @@ export default async function EmployeesPage({ searchParams }: { searchParams: { 
                     </tbody>
                 </table>
             </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && <Pagination totalPages={totalPages} />}
         </div>
     );
 }

@@ -8,12 +8,14 @@ import {
   Users,
   ClipboardCheck,
   Network,
-  LogOut
+  LogOut,
+  Target
 } from "lucide-react";
 
 const menu = [
   { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
   { name: "Karyawan", path: "/dashboard/employees", icon: Users },
+  { name: "Kelola KPI", path: "/dashboard/kpi", icon: Target },
   { name: "Penilaian", path: "/dashboard/evaluation", icon: ClipboardCheck },
   { name: "Struktur Organisasi", path: "/dashboard/organization", icon: Network },
 ];
@@ -42,8 +44,8 @@ export default function Sidebar() {
               key={item.name}
               href={item.path}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group focus:outline-none ${isActive
-                  ? "bg-purple-600 text-white shadow-lg shadow-purple-900/20"
-                  : "text-slate-400 hover:bg-slate-900 hover:text-slate-100"
+                ? "bg-purple-600 text-white shadow-lg shadow-purple-900/20"
+                : "text-slate-400 hover:bg-slate-900 hover:text-slate-100"
                 }`}
             >
               <item.icon size={20} className={isActive ? "text-white" : "group-hover:text-purple-300 transition-colors"} />

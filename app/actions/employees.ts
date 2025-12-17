@@ -82,3 +82,70 @@ export async function createEmployee(formData: FormData) {
     revalidatePath("/dashboard/employees");
     redirect("/dashboard/employees");
 }
+
+export async function deleteEmployee(id: string) {
+    const session = await auth();
+    if (!session || !session.user || (session.user.role !== 'ADMIN' && session.user.role !== 'MANAGER')) {
+        return { error: "Unauthorized" };
+    }
+
+    try {
+        await prisma.user.delete({
+            where: { id }
+        });
+    } catch (error) {
+        return { error: "Failed to delete employee" };
+    }
+
+    revalidatePath("/dashboard/employees");
+}
+
+export async function getEmployeeById(id: string) {
+    const user = await prisma.user.findUnique({
+        where: { id },
+        include: { department: true }
+    });
+    return user;
+}
+
+export async function updateEmployee(id: string, formData: FormData) {
+    // 1. RBAC
+    const session = await auth();
+    if (!session || !session.user || (session.user.role !== 'ADMIN' && session.user.role !== 'MANAGER')) {
+        return { error: "Unauthorized" };
+    }
+
+    const rawData = {
+        name: formData.get("name"),
+        employeeId: formData.get("employeeId"),
+        email: formData.get("email"),
+        departmentId: formData.get("departmentId") || null,
+        position: formData.get("position"),
+        gender: formData.get("gender"),
+        role: formData.get("role"),
+        managerId: formData.get("managerId") || null,
+        joinDate: formData.get("joinDate"),
+    };
+
+    try {
+        await prisma.user.update({
+            where: { id },
+            data: {
+                name: rawData.name as string,
+                employeeId: rawData.employeeId as string,
+                email: rawData.email as string,
+                departmentId: rawData.departmentId as string,
+                position: rawData.position as string,
+                gender: rawData.gender as any,
+                role: rawData.role as any,
+                managerId: rawData.managerId as string,
+                joinDate: rawData.joinDate ? new Date(rawData.joinDate as string) : undefined,
+            }
+        });
+    } catch (error) {
+        return { error: "Failed to update employee" };
+    }
+
+    revalidatePath("/dashboard/employees");
+    redirect("/dashboard/employees");
+}
