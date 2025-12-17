@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { User, Gender } from "@prisma/client";
-import { Trophy, Users, UserCheck } from "lucide-react";
+import { Trophy, Users, UserCheck, Mars, Venus } from "lucide-react";
 import OverviewChart from "@/components/dashboard/OverviewChart";
 
 async function getDashboardData() {
@@ -85,14 +85,14 @@ export default async function DashboardPage() {
         <StatCard
           title="Male Employees"
           value={maleCount}
-          icon={UserCheck}
+          icon={Mars}
           color="indigo"
           subtext={`${((maleCount / totalEmployees) * 100 || 0).toFixed(0)}% of workforce`}
         />
         <StatCard
           title="Female Employees"
           value={femaleCount}
-          icon={UserCheck}
+          icon={Venus}
           color="pink"
           subtext={`${((femaleCount / totalEmployees) * 100 || 0).toFixed(0)}% of workforce`}
         />

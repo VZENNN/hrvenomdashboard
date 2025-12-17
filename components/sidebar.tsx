@@ -28,10 +28,12 @@ export default function Sidebar() {
   return (
     <aside className="w-64 bg-slate-950 text-white h-screen flex flex-col p-4 border-r border-slate-800 shadow-xl fixed left-0 top-0">
       <div className="mb-10 px-2 mt-4 flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center font-bold text-lg">
-          V
-        </div>
-        <h1 className="text-xl font-bold tracking-wider">VENOM HR</h1>
+        <img 
+          src="/venom-logo.png" 
+          alt="Venom HR Logo" 
+          className="w-8 h-8 rounded-lg object-cover"
+        /> 
+        <h1 className="text-xl font-bold tracking-wider">VENOM  HR <span>DASHBOARD</span></h1>
       </div>
 
       <nav className="flex flex-col gap-2 flex-1">
