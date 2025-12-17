@@ -90,9 +90,12 @@ export default async function EvaluationListPage({ searchParams }: { searchParam
                                             {ev.appraiser.name}
                                         </td>
                                         <td className="p-4 text-right">
-                                            <button className="text-slate-400 hover:text-purple-600 transition">
+                                            <Link
+                                                href={`/dashboard/evaluation/${ev.id}`}
+                                                className="p-2 text-slate-400 hover:text-purple-600 transition inline-block"
+                                            >
                                                 <Eye size={18} />
-                                            </button>
+                                            </Link>
                                         </td>
                                     </tr>
                                 );
