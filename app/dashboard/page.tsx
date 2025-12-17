@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { User, Gender } from "@prisma/client";
 import { Trophy, Users, UserCheck } from "lucide-react";
+import OverviewChart from "@/components/dashboard/OverviewChart";
 
 async function getDashboardData() {
   const totalEmployees = await prisma.user.count({ where: { status: "ACTIVE" } });
@@ -30,11 +31,40 @@ async function getDashboardData() {
     }
   });
 
-  return { totalEmployees, maleCount, femaleCount, topScorer: topScorerEvaluation };
+  // Chart Data Aggregation (Last 6 Months)
+  const sixMonthsAgo = new Date();
+  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+
+  const evaluations = await prisma.evaluation.findMany({
+    where: {
+      createdAt: { gte: sixMonthsAgo }
+    },
+    select: { month: true, year: true, finalScore: true }
+  });
+
+  const chartData = [];
+  for (let i = 0; i < 6; i++) {
+    const d = new Date();
+    d.setMonth(d.getMonth() - i);
+    const m = d.getMonth() + 1;
+    const y = d.getFullYear();
+
+    const monthlyEvals = evaluations.filter(e => e.month === m && e.year === y);
+    const avg = monthlyEvals.length > 0
+      ? monthlyEvals.reduce((a, b) => a + b.finalScore, 0) / monthlyEvals.length
+      : 0;
+
+    chartData.unshift({
+      month: d.toLocaleString('default', { month: 'short' }),
+      score: Number(avg.toFixed(2))
+    });
+  }
+
+  return { totalEmployees, maleCount, femaleCount, topScorer: topScorerEvaluation, chartData };
 }
 
 export default async function DashboardPage() {
-  const { totalEmployees, maleCount, femaleCount, topScorer } = await getDashboardData();
+  const { totalEmployees, maleCount, femaleCount, topScorer, chartData } = await getDashboardData();
 
   return (
     <div className="space-y-8">
@@ -43,7 +73,7 @@ export default async function DashboardPage() {
         <p className="text-slate-500 dark:text-slate-400 mt-2">Welcome back to VENOM HR System.</p>
       </div>
 
-      {/* Stats Grid */}
+      {/* Stats Grid - UNCHANGED */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatCard
           title="Total Employees"
@@ -70,7 +100,7 @@ export default async function DashboardPage() {
 
       {/* Top Scorer Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Top Scorer Card */}
+        {/* Top Scorer Card - UNCHANGED */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 p-8 relative overflow-hidden">
           <div className="absolute top-0 right-0 p-4 opacity-10">
             <Trophy size={120} />
@@ -102,13 +132,11 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* Quick Actions or Chart (Placeholder) */}
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 p-8 flex flex-col justify-center items-center text-center">
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-3">Performance Trends</h3>
-          <p className="text-slate-500 text-sm mb-6">Monthly average performance across all departments.</p>
-          <div className="w-full h-40 bg-slate-50 dark:bg-slate-900 rounded-xl flex items-center justify-center border border-dashed border-slate-300">
-            <span className="text-slate-400 text-sm">Chart Visualization Coming Soon</span>
-          </div>
+        {/* Quick Actions or Chart */}
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 p-8 flex flex-col justify-center">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">Performance Trends</h3>
+          <p className="text-slate-500 text-sm mb-6">Average score (last 6 months).</p>
+          <OverviewChart data={chartData} />
         </div>
       </div>
     </div>

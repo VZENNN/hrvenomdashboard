@@ -164,6 +164,7 @@ export default function RegisterPage() {
                 <option value="ADMIN">Admin</option>
               </select>
             </div>
+            
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Join Date</label>
               <input

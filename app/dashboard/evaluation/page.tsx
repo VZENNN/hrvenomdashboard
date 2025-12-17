@@ -1,15 +1,27 @@
 
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
-import { Plus, Search, Eye } from 'lucide-react';
+import { Plus, Search as SearchIcon, Eye } from 'lucide-react';
 
-export default async function EvaluationListPage() {
+import Pagination from '@/components/ui/Pagination';
+import Search from '@/components/ui/Search';
+
+export default async function EvaluationListPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+    const params = await searchParams;
+    const currentPage = Number(params?.page) || 1;
+    const itemsPerPage = 10;
+
+    const totalItems = await prisma.evaluation.count();
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+
     const evaluations = await prisma.evaluation.findMany({
         include: {
             user: { include: { department: true } },
             appraiser: true
         },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
+        skip: (currentPage - 1) * itemsPerPage,
+        take: itemsPerPage
     });
 
     const getGrade = (score: number) => {
@@ -89,6 +101,9 @@ export default async function EvaluationListPage() {
                     </tbody>
                 </table>
             </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && <Pagination totalPages={totalPages} />}
         </div>
     );
 }
