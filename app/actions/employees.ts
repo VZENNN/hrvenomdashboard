@@ -80,7 +80,8 @@ export async function createEmployee(formData: FormData) {
     }
 
     revalidatePath("/dashboard/employees");
-    redirect("/dashboard/employees");
+    revalidatePath("/dashboard/employees");
+    return { success: true };
 }
 
 export async function deleteEmployee(id: string) {
@@ -147,5 +148,6 @@ export async function updateEmployee(id: string, formData: FormData) {
     }
 
     revalidatePath("/dashboard/employees");
-    redirect("/dashboard/employees");
+    revalidatePath("/dashboard/employees");
+    return { success: true };
 }

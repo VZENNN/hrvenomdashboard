@@ -1,8 +1,10 @@
 'use client';
 
+import { useRouter } from "next/navigation";
 import { createEmployee } from "@/app/actions/employees";
 import { Department, User } from "@prisma/client";
 import { Save } from "lucide-react";
+import { toast } from "sonner";
 
 interface Props {
     departments: Department[];
@@ -10,10 +12,15 @@ interface Props {
 }
 
 export default function AddEmployeeForm({ departments, managers }: Props) {
+    const router = useRouter();
+
     async function handleSubmit(formData: FormData) {
         const result = await createEmployee(formData);
         if (result?.error) {
-            alert(result.error);
+            toast.error(result.error);
+        } else {
+            toast.success("Karyawan berhasil ditambahkan");
+            router.push("/dashboard/employees");
         }
     }
 

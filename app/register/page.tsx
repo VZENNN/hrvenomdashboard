@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -13,10 +14,10 @@ export default function RegisterPage() {
     name: "",
     email: "",
     password: "",
-    gender: "MALE", 
+    gender: "MALE",
     position: "",
-    role: "EMPLOYEE", 
-    joinDate: new Date().toISOString().split('T')[0] 
+    role: "EMPLOYEE",
+    joinDate: new Date().toISOString().split('T')[0]
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -45,10 +46,11 @@ export default function RegisterPage() {
         throw new Error(data.error || "Gagal mendaftar");
       }
 
-      alert("Berhasil membuat akun karyawan!");
+      toast.success("Berhasil membuat akun karyawan! Redirecting...");
       router.push("/login");
-      
+
     } catch (err: any) {
+      toast.error(err.message || "Gagal mendaftar");
       setError(err.message);
     } finally {
       setLoading(false);
@@ -164,7 +166,7 @@ export default function RegisterPage() {
                 <option value="ADMIN">Admin</option>
               </select>
             </div>
-            
+
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Join Date</label>
               <input

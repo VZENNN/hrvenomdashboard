@@ -2,28 +2,35 @@
 
 import { deleteKpiCriteria } from "@/app/actions/kpi";
 import { Trash2, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { useState } from "react";
 import ConfirmModal from "@/components/ui/ConfirmDeleteModal";
 
 export default function DeleteKpiButton({ id }: { id: string }) {
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const handleDelete = async () => {
     setLoading(true);
-    setError(null);
+    // setError(null); // No longer needed with toast
 
-    const result = await deleteKpiCriteria(id);
+    try {
+      const result = await deleteKpiCriteria(id);
 
-    if (result?.error) {
-      setError(result.error);
+      if (result?.error) {
+        toast.error(result.error);
+        // setError(result.error);
+        return;
+      }
+
+      toast.success("KPI deleted successfully");
+      setOpen(false);
+    } catch (error) {
+      toast.error("An unexpected error occurred");
+      console.error(error);
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setLoading(false);
-    setOpen(false);
   };
 
   return (
@@ -49,19 +56,11 @@ export default function DeleteKpiButton({ id }: { id: string }) {
             <p className="text-red-600 font-medium">
               Data yang sudah digunakan di evaluasi mungkin akan terpengaruh.
             </p>
-            {error && (
-              <p className="mt-2 text-sm text-red-500">
-                {error}
-              </p>
-            )}
           </>
         }
         confirmText="Delete KPI"
         loading={loading}
-        onCancel={() => {
-          setError(null);
-          setOpen(false);
-        }}
+        onCancel={() => setOpen(false)}
         onConfirm={handleDelete}
       />
     </>

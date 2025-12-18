@@ -5,6 +5,7 @@ import { updateEmployee } from '@/app/actions/employees';
 import { Department, User, Role, Gender } from '@prisma/client';
 import { Loader2, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { toast } from "sonner";
 
 interface Props {
     user: User & { department: Department | null };
@@ -27,10 +28,12 @@ export default function EditEmployeeForm({ user, departments, managers }: Props)
         const res = await updateEmployee(user.id, formData);
 
         if (res?.error) {
+            toast.error(res.error);
             setError(res.error);
             setLoading(false);
         } else {
-            // Redirect handled in server action, but we can double check
+            toast.success("Data karyawan berhasil diperbarui");
+            router.back();
         }
     };
 

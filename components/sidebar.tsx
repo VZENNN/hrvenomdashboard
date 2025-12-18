@@ -10,12 +10,14 @@ import {
   ClipboardCheck,
   Network,
   LogOut,
-  Target
+  Target,
+  Building2
 } from "lucide-react";
 
 const menu = [
   { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
   { name: "Karyawan", path: "/dashboard/employees", icon: Users },
+  { name: "Departemen", path: "/dashboard/departments", icon: Building2 },
   { name: "Kelola KPI", path: "/dashboard/kpi", icon: Target },
   { name: "Penilaian", path: "/dashboard/evaluation", icon: ClipboardCheck },
   { name: "Struktur Organisasi", path: "/dashboard/organization", icon: Network },
