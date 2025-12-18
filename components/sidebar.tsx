@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from 'next/image'
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import {
@@ -26,10 +27,12 @@ export default function Sidebar() {
   return (
     <aside className="w-64 bg-slate-950 text-white h-screen flex flex-col p-4 border-r border-slate-800 shadow-xl fixed left-0 top-0">
       <div className="mb-10 px-2 mt-4 flex items-center gap-3">
-        <img 
+        <Image 
           src="/venom-logo.png" 
           alt="Venom HR Logo" 
           className="w-8 h-8 rounded-lg object-cover"
+          width={800}
+          height={800}
         /> 
         <h1 className="text-xl font-bold tracking-wider">VENOM  HR <span>DASHBOARD</span></h1>
       </div>

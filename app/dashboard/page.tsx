@@ -14,9 +14,9 @@ async function getDashboardData() {
     where: { status: "ACTIVE", gender: "FEMALE" }
   });
 
-  // Top Scorer Logic (Current Month)
+  // Top 3 Scorers Logic (Current Month)
   const currentDate = new Date();
-  const topScorerEvaluation = await prisma.evaluation.findFirst({
+  const topScorersEvaluation = await prisma.evaluation.findMany({
     where: {
       month: currentDate.getMonth() + 1, // JS Month is 0-indexed
       year: currentDate.getFullYear()
@@ -24,6 +24,7 @@ async function getDashboardData() {
     orderBy: {
       finalScore: 'desc'
     },
+    take: 3,
     include: {
       user: {
         include: { department: true }
@@ -60,11 +61,11 @@ async function getDashboardData() {
     });
   }
 
-  return { totalEmployees, maleCount, femaleCount, topScorer: topScorerEvaluation, chartData };
+  return { totalEmployees, maleCount, femaleCount, topScorers: topScorersEvaluation, chartData };
 }
 
 export default async function DashboardPage() {
-  const { totalEmployees, maleCount, femaleCount, topScorer, chartData } = await getDashboardData();
+  const { totalEmployees, maleCount, femaleCount, topScorers, chartData } = await getDashboardData();
 
   return (
     <div className="space-y-8">
@@ -98,29 +99,57 @@ export default async function DashboardPage() {
         />
       </div>
 
-      {/* Top Scorer Section */}
+      {/* Top Scorers Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Top Scorer Card - UNCHANGED */}
+        {/* Top 3 Scorers Card */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 p-8 relative overflow-hidden">
           <div className="absolute top-0 right-0 p-4 opacity-10">
-            <Trophy size={120} />
+            <Trophy size={300} />
           </div>
 
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-6 text-amber-500 font-bold uppercase tracking-wider text-sm">
-              <Trophy size={18} /> Employee of the Month
+              <Trophy size={50} /> Top 3 Employees
             </div>
 
-            {topScorer ? (
-              <div className="flex items-center gap-6">
-                <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-amber-400 to-amber-600 flex items-center justify-center text-white text-3xl font-bold shadow-lg ring-4 ring-amber-100 dark:ring-amber-900">
-                  {topScorer.user.name.charAt(0)}
-                </div>
-                <div>
-                  <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-1">{topScorer.user.name}</h3>
-                  <p className="text-slate-500 dark:text-slate-400 mb-3">{topScorer.user.position} • {topScorer.user.department?.name}</p>
-                  <div className="inline-block bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-4 py-1 rounded-full font-bold text-lg">
-                    Score: {topScorer.finalScore.toFixed(2)}
+            {topScorers && topScorers.length > 0 ? (
+              <div className="space-y-4">
+                {topScorers.map((scorer, index) => (
+                  <div key={scorer.id} className="flex items-center gap-4 pb-4 border-b border-slate-200 dark:border-slate-700 last:border-b-0 last:pb-0">
+                    <div className="flex-shrink-0">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg ${
+                        index === 0 ? 'bg-gradient-to-tr from-amber-400 to-amber-600' :
+                        index === 1 ? 'bg-gradient-to-tr from-slate-300 to-slate-400' :
+                        'bg-gradient-to-tr from-orange-400 to-orange-600'
+                      } shadow-lg ring-2 ${
+                        index === 0 ? 'ring-amber-100 dark:ring-amber-900' :
+                        index === 1 ? 'ring-slate-100 dark:ring-slate-700' :
+                        'ring-orange-100 dark:ring-orange-900'
+                      }`}>
+                        {index + 1}
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-slate-900 dark:text-white truncate">{scorer.user.name}</h4>
+                      <p className="text-sm text-slate-500 dark:text-slate-400 truncate">{scorer.user.position}</p>
+                    </div>
+                    <div className={`font-bold text-lg whitespace-nowrap ${
+                      index === 0 ? 'text-amber-500' :
+                      index === 1 ? 'text-slate-400' :
+                      'text-orange-500'
+                    }`}>
+                      {scorer.finalScore.toFixed(2)}
+                    </div>
+                  </div>
+                ))}
+                <div className="pt-4 mt-4 border-t border-slate-200 dark:border-slate-700">
+                  <div className="text-center">
+                    <p className="text-sm text-slate-600 dark:text-slate-300 mb-3">
+                      Average Score: <span className="font-bold text-slate-900 dark:text-white">{(topScorers.reduce((acc, s) => acc + s.finalScore, 0) / topScorers.length).toFixed(2)}</span>
+                    </p>
+                    <a href="/dashboard/evaluation" className="inline-block px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-medium transition-colors text-sm">
+                      View All Evaluations
+                    </a>
                   </div>
                 </div>
               </div>
