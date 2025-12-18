@@ -109,7 +109,7 @@ export default async function DashboardPage() {
 
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-6 text-amber-500 font-bold uppercase tracking-wider text-sm">
-              <Trophy size={50} /> Top 3 Employees
+              <Trophy size={50} /> Employees Of The Month
             </div>
 
             {topScorers && topScorers.length > 0 ? (

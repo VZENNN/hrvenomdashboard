@@ -81,7 +81,7 @@ export default async function KpiListPage({ searchParams }: { searchParams: Prom
                         {kpis.length === 0 ? (
                             <tr>
                                 <td colSpan={7} className="p-8 text-center text-slate-500">
-                                    Belum ada KPI. Klik "Tambah KPI" untuk membuat.
+                                    Belum ada KPI. Klik &quot;Tambah KPI&quot; untuk membuat.
                                 </td>
                             </tr>
                         ) : (

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import Image from "next/image";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -48,7 +49,13 @@ export default function LoginPage() {
       <div className="bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-xl w-full max-w-md border border-slate-100 dark:border-slate-700">
         <div className="mb-8 text-center">
           <div className="w-25 h-25 bg-white rounded-xl mx-auto mb-4 flex items-center justify-center">
-
+              <Image 
+                src="/venom-logo.png" 
+                alt="Venom HR Logo" 
+                className="w-25 h-25 rounded-lg object-cover"
+                width={800}
+                height={800}
+              />
           </div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Welcome Back</h1>
           <p className="text-slate-500 text-sm">Sign in to VENOM HR System</p>

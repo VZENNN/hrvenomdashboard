@@ -5,16 +5,30 @@ import { Plus, Search as SearchIcon, Eye } from 'lucide-react';
 
 import Pagination from '@/components/ui/Pagination';
 import Search from '@/components/ui/Search';
+import MonthFilter from '@/components/evaluation/MonthFilter';
 
-export default async function EvaluationListPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+export default async function EvaluationListPage({ searchParams }: {
+    searchParams: Promise<{
+        page?: string;
+        month?: string;
+    }>;
+}) {
     const params = await searchParams;
     const currentPage = Number(params?.page) || 1;
     const itemsPerPage = 10;
 
-    const totalItems = await prisma.evaluation.count();
+    const monthFilter = params?.month ? Number(params.month) : null;
+
+    const where = monthFilter
+    ? { month: monthFilter }
+    : {};
+
+
+    const totalItems = await prisma.evaluation.count({ where });
     const totalPages = Math.ceil(totalItems / itemsPerPage);
 
     const evaluations = await prisma.evaluation.findMany({
+        where,
         include: {
             user: { include: { department: true } },
             appraiser: true
@@ -45,6 +59,10 @@ export default async function EvaluationListPage({ searchParams }: { searchParam
                 >
                     <Plus size={18} /> New Evaluation
                 </Link>
+                <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+                    <MonthFilter />
+                </div>
+
             </div>
 
             <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
