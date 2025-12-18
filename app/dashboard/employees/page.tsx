@@ -1,28 +1,57 @@
-
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import { Plus, Search as SearchIcon, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import DeleteEmployeeButton from '@/components/employees/DeleteEmployeeButton';
+import EmployeeFilter from '@/components/employees/EmployeeFilter';
 
 import Pagination from '@/components/ui/Pagination';
 
 import Search from '@/components/ui/Search';
 
-export default async function EmployeesPage({ searchParams }: { searchParams: Promise<{ q?: string; page?: string }> }) {
+import { EmployeeStatus } from '@prisma/client';
+
+export default async function EmployeesPage({
+    searchParams
+}: {
+    searchParams: Promise<{ q?: string; page?: string; departmentId?: string; position?: string; status?: string }>
+}) {
     const params = await searchParams;
     const query = params?.q || '';
     const currentPage = Number(params?.page) || 1;
     const itemsPerPage = 10;
 
-    const where = {
-        OR: [
-            { name: { contains: query, mode: 'insensitive' as const } },
-            { employeeId: { contains: query, mode: 'insensitive' as const } }
+    const departmentId = params?.departmentId;
+    const position = params?.position;
+    const status = params?.status as EmployeeStatus | undefined;
+
+    // Build Where Clause
+    const where: any = {
+        AND: [
+            {
+                OR: [
+                    { name: { contains: query, mode: 'insensitive' } },
+                    { employeeId: { contains: query, mode: 'insensitive' } }
+                ]
+            }
         ]
     };
 
+    if (departmentId) where.AND.push({ departmentId });
+    if (position) where.AND.push({ position });
+    if (status) where.AND.push({ status });
+
     const totalItems = await prisma.user.count({ where });
     const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+    const departments = await prisma.department.findMany({
+        orderBy: { name: 'asc' }
+    });
+
+    const distinctPositions = await prisma.user.findMany({
+        select: { position: true },
+        distinct: ['position'],
+        orderBy: { position: 'asc' }
+    });
 
     const employees = await prisma.user.findMany({
         where,
@@ -51,9 +80,16 @@ export default async function EmployeesPage({ searchParams }: { searchParams: Pr
                 </Link>
             </div>
 
-            {/* Search Bar */}
-            <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
-                <Search placeholder="Search by name or ID..." />
+            {/* Search and Filter */}
+            <div className="space-y-4">
+                <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+                    <Search placeholder="Search by name or ID..." />
+                </div>
+
+                <EmployeeFilter
+                    departments={departments}
+                    positions={distinctPositions.map(p => p.position)}
+                />
             </div>
 
             {/* Table */}
