@@ -5,6 +5,7 @@ import { updateDepartment } from '@/app/actions/departments';
 import { Department } from '@prisma/client';
 import { Loader2, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { toast } from "sonner";
 
 interface Props {
     department: Department;
@@ -24,8 +25,12 @@ export default function EditDepartmentForm({ department }: Props) {
         const res = await updateDepartment(department.id, formData);
 
         if (res?.error) {
+            toast.error(res.error);
             setError(res.error);
             setLoading(false);
+        } else {
+            toast.success("Departemen berhasil diperbarui");
+            router.back();
         }
     };
 

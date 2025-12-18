@@ -5,7 +5,7 @@ import { AlertTriangle } from "lucide-react";
 type ConfirmModalProps = {
   open: boolean;
   title: string;
-  description: string;
+  description: React.ReactNode;
   confirmText?: string;
   loading?: boolean;
   onCancel: () => void;

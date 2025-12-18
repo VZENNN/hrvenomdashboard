@@ -4,6 +4,7 @@ import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -27,13 +28,16 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
+        toast.error("Invalid email or password.");
         setError("Invalid email or password.");
         setLoading(false);
       } else {
+        toast.success("Welcome back!");
         router.push("/dashboard");
         router.refresh();
       }
     } catch (err) {
+      toast.error("Something went wrong.");
       setError("Something went wrong.");
       setLoading(false);
     }

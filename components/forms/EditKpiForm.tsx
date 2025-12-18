@@ -5,6 +5,7 @@ import { updateKpiCriteria } from '@/app/actions/kpi';
 import { Department, KpiCriteria, KpiType } from '@prisma/client';
 import { Loader2, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { toast } from "sonner";
 
 interface Props {
     kpi: KpiCriteria & { department: Department | null };
@@ -25,8 +26,12 @@ export default function EditKpiForm({ kpi, departments }: Props) {
         const res = await updateKpiCriteria(kpi.id, formData);
 
         if (res?.error) {
+            toast.error(res.error);
             setError(res.error);
             setLoading(false);
+        } else {
+            toast.success("KPI berhasil diperbarui");
+            router.back();
         }
     };
 

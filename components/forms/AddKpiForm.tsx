@@ -1,15 +1,18 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { createKpiCriteria } from '@/app/actions/kpi';
 import { Department, KpiType } from '@prisma/client';
 import { Loader2, Save } from 'lucide-react';
+import { toast } from "sonner";
 
 interface Props {
     departments: Department[];
 }
 
 export default function AddKpiForm({ departments }: Props) {
+    const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -22,8 +25,12 @@ export default function AddKpiForm({ departments }: Props) {
         const res = await createKpiCriteria(formData);
 
         if (res?.error) {
+            toast.error(res.error);
             setError(res.error);
             setLoading(false);
+        } else {
+            toast.success("KPI berhasil ditambahkan");
+            router.push("/dashboard/kpi");
         }
     };
 

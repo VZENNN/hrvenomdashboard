@@ -1,10 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { createDepartment } from '@/app/actions/departments';
 import { Loader2, Save } from 'lucide-react';
+import { toast } from "sonner";
 
 export default function AddDepartmentForm() {
+    const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -17,8 +20,12 @@ export default function AddDepartmentForm() {
         const res = await createDepartment(formData);
 
         if (res?.error) {
+            toast.error(res.error);
             setError(res.error);
             setLoading(false);
+        } else {
+            toast.success("Departemen berhasil ditambahkan");
+            router.push("/dashboard/departments");
         }
     };
 

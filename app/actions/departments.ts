@@ -59,7 +59,8 @@ export async function createDepartment(formData: FormData) {
     }
 
     revalidatePath("/dashboard/departments");
-    redirect("/dashboard/departments");
+    revalidatePath("/dashboard/departments");
+    return { success: true };
 }
 
 export async function updateDepartment(id: string, formData: FormData) {
@@ -90,7 +91,8 @@ export async function updateDepartment(id: string, formData: FormData) {
     }
 
     revalidatePath("/dashboard/departments");
-    redirect("/dashboard/departments");
+    revalidatePath("/dashboard/departments");
+    return { success: true };
 }
 
 export async function deleteDepartment(id: string) {
