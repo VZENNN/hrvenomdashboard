@@ -44,11 +44,11 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-100 dark:bg-slate-900">
+    <div className="min-h-screen flex items-center justify-center bg-slate-200 dark:bg-slate-900">
       <div className="bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-xl w-full max-w-md border border-slate-100 dark:border-slate-700">
         <div className="mb-8 text-center">
-          <div className="w-12 h-12 bg-purple-600 rounded-xl mx-auto mb-4 flex items-center justify-center">
-            <span className="text-white font-bold text-xl">V</span>
+          <div className="w-25 h-25 bg-white rounded-xl mx-auto mb-4 flex items-center justify-center">
+
           </div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Welcome Back</h1>
           <p className="text-slate-500 text-sm">Sign in to VENOM HR System</p>
@@ -66,7 +66,7 @@ export default function LoginPage() {
             <input
               name="email"
               type="email"
-              placeholder="admin@venom.com"
+              placeholder="example@example.com"
               className="w-full border border-slate-300 dark:border-slate-600 px-4 py-3 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none dark:bg-slate-900"
               required
             />
@@ -93,7 +93,7 @@ export default function LoginPage() {
         </form>
 
         <p className="mt-8 text-center text-xs text-slate-400">
-          Protected Global HR System © 2025
+          Venom HR System © 2025
         </p>
       </div>
     </div>
