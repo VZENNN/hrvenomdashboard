@@ -70,7 +70,7 @@ export default async function DepartmentsPage() {
                         {departments.length === 0 ? (
                             <tr>
                                 <td colSpan={5} className="p-8 text-center text-slate-500">
-                                    Belum ada departemen. Klik "Tambah Departemen" untuk membuat.
+                                    Belum ada departemen. Klik &quot;Tambah Departemen&quot; untuk membuat.
                                 </td>
                             </tr>
                         ) : (
