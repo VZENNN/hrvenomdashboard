@@ -1,4 +1,5 @@
 import "./globals.css";
+import { Toaster } from "@/components/ui/Toaster";
 
 export const metadata = {
   title: "HR Dashboard VENOM",
@@ -12,7 +13,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="bg-gray-100">{children}</body>
+      <body className="bg-gray-100">
+        {children}
+        <Toaster />
+      </body>
     </html>
   );
 }

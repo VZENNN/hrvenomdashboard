@@ -73,7 +73,8 @@ export async function createKpiCriteria(formData: FormData) {
     }
 
     revalidatePath("/dashboard/kpi");
-    redirect("/dashboard/kpi");
+    revalidatePath("/dashboard/kpi");
+    return { success: true };
 }
 
 export async function updateKpiCriteria(id: string, formData: FormData) {
@@ -112,7 +113,8 @@ export async function updateKpiCriteria(id: string, formData: FormData) {
     }
 
     revalidatePath("/dashboard/kpi");
-    redirect("/dashboard/kpi");
+    revalidatePath("/dashboard/kpi");
+    return { success: true };
 }
 
 export async function deleteKpiCriteria(id: string) {

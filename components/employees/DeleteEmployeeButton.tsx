@@ -2,6 +2,7 @@
 
 import { deleteEmployee } from "@/app/actions/employees";
 import { Trash2, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { useState } from "react";
 import ConfirmModal from "@/components/ui/ConfirmDeleteModal";
 
@@ -11,9 +12,23 @@ export default function DeleteEmployeeButton({ id }: { id: string }) {
 
   const handleDelete = async () => {
     setLoading(true);
-    await deleteEmployee(id);
-    setLoading(false);
-    setOpen(false);
+    try {
+      const result = await deleteEmployee(id);
+
+      if (result?.error) {
+        toast.error(result.error);
+        setLoading(false);
+        return;
+      }
+
+      toast.success("Employee deleted successfully");
+      setOpen(false);
+    } catch (error) {
+      toast.error("Failed to delete employee");
+      console.error(error);
+    } finally {
+      if (open) setLoading(false); // Only unset loading if modal is still open (on error), otherwise component might unmount or page navigates
+    }
   };
 
   return (
