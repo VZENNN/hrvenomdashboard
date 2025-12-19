@@ -1,101 +1,309 @@
 'use client';
 
-import { User } from "@prisma/client";
-import { useMemo } from "react";
-import { Download, Printer } from "lucide-react";
+import React, { useCallback, useState, useMemo, useEffect } from 'react';
+import {
+    ReactFlow,
+    useNodesState,
+    useEdgesState,
+    Controls,
+    Background,
+    MiniMap,
+    Panel,
+    Node,
+    Edge,
+    addEdge,
+    Connection,
+    ReactFlowProvider,
+    MarkerType,
+    NodeTypes,
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
+import { Plus, Trash2, GripHorizontal, Save, Layers, Layout, X } from "lucide-react";
+import OrgNode, { OrgNodeData } from './OrgNode';
+import { v4 as uuidv4 } from 'uuid';
+import { toast } from 'sonner';
 
-interface Props {
-    users: User[];
-}
+const nodeTypes: NodeTypes = {
+    org: OrgNode,
+};
 
-interface TreeNode extends User {
-    children: TreeNode[];
-}
+type DivisionData = {
+    id: string;
+    name: string;
+    nodes: Node[];
+    edges: Edge[];
+};
 
-export default function OrgChart({ users }: Props) {
+const initialDivisions: DivisionData[] = [
+    {
+        id: 'main',
+        name: 'Main Structure',
+        nodes: [
+            {
+                id: '1',
+                type: 'org',
+                position: { x: 250, y: 0 },
+                data: { name: 'CEO Name', position: 'Chief Executive Officer', isRoot: true },
+            },
+        ],
+        edges: []
+    }
+];
 
-    const tree = useMemo(() => {
-        const userMap = new Map<string, TreeNode>();
-        users.forEach(u => userMap.set(u.id, { ...u, children: [] }));
+function OrgChartContent() {
+    const [divisions, setDivisions] = useState<DivisionData[]>(initialDivisions);
+    const [activeDivisionId, setActiveDivisionId] = useState<string>('main');
 
-        const roots: TreeNode[] = [];
+    // These local states track the *currently active* chart
+    // We synchronize them back to the divisions array on change/switch
+    const [nodes, setNodes, onNodesChange] = useNodesState([]);
+    const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
-        users.forEach(u => {
-            const node = userMap.get(u.id);
-            if (u.managerId && userMap.has(u.managerId)) {
-                userMap.get(u.managerId)?.children.push(node!);
-            } else {
-                roots.push(node!);
+    // When switching tabs, save current state to the old tab (implicitly handled by syncing)
+    // and load the new tab's state
+
+    // Actually, checking "onNodesChange" is purely local visual state.
+    // We need to sync this state back to the `divisions` state when it changes or before we switch.
+    // To make it simpler, we will just use an effect or custom setter that updates both.
+
+    // Better approach: When activeDivisionId changes, load that data into nodes/edges.
+    useEffect(() => {
+        const division = divisions.find(d => d.id === activeDivisionId);
+        if (division) {
+            setNodes(division.nodes);
+            setEdges(division.edges);
+        }
+    }, [activeDivisionId]); // depends on divisions length or deep compare? No, just ID change triggers reload.
+    // Issue: If we modify nodes, we need to update "divisions" state too so it persists when we switch back.
+
+    // Let's create wrappers for setNodes/setEdges that also update the main store
+    const updateDivisionData = useCallback((newNodes: Node[], newEdges: Edge[]) => {
+        setDivisions(prev => prev.map(d => {
+            if (d.id === activeDivisionId) {
+                return { ...d, nodes: newNodes, edges: newEdges };
             }
-        });
+            return d;
+        }));
+    }, [activeDivisionId]);
 
-        return roots;
-    }, [users]);
+    // We can hook into the change events. 
+    // However, useNodesState's onNodesChange is for internal react-flow logic (dragging etc).
+    // We should probably just sync on specific actions or use an effect that detects changes in `nodes` / `edges` 
+    // and writes them back to `divisions`.
+    useEffect(() => {
+        setDivisions(prev => prev.map(d => {
+            if (d.id === activeDivisionId) {
+                // Only update if actually different to prevent cycles? 
+                // Creating new object refs might trigger re-renders, but fine for this scale.
+                return { ...d, nodes: nodes, edges: edges };
+            }
+            return d;
+        }));
+    }, [nodes, edges, activeDivisionId]);
 
-    const handlePrint = () => {
-        window.print();
+
+    // Callbacks for Node interactions
+    const onConnect = useCallback(
+        (params: Connection) => setEdges((eds) => addEdge({
+            ...params,
+            type: 'smoothstep',
+            animated: true,
+            style: { stroke: '#8b5cf6', strokeWidth: 2 },
+            markerEnd: {
+                type: MarkerType.ArrowClosed,
+                color: '#8b5cf6',
+            },
+        }, eds)),
+        [setEdges],
+    );
+
+    const handleNodeEdit = useCallback((id: string, field: string, value: string) => {
+        setNodes((nds) => nds.map((node) => {
+            if (node.id === id) {
+                return {
+                    ...node,
+                    data: { ...node.data, [field]: value }
+                };
+            }
+            return node;
+        }));
+    }, [setNodes]);
+
+    const handleNodeDelete = useCallback((id: string) => {
+        setNodes((nds) => nds.filter((n) => n.id !== id));
+        setEdges((eds) => eds.filter((e) => e.source !== id && e.target !== id));
+        toast.success("Member removed");
+    }, [setNodes, setEdges]);
+
+    // Inject the handlers
+    const nodesWithHandlers = useMemo(() => nodes.map(node => ({
+        ...node,
+        data: {
+            ...node.data,
+            onEdit: handleNodeEdit,
+            onDelete: handleNodeDelete
+        }
+    })), [nodes, handleNodeEdit, handleNodeDelete]);
+
+
+    const handleAddNode = () => {
+        const id = uuidv4();
+        const newNode: Node = {
+            id,
+            type: 'org',
+            position: { x: 250, y: 200 },
+            data: {
+                name: 'New Employee',
+                position: 'Role Title',
+                // onEdit/onDelete will be injected by nodesWithHandlers
+            },
+        };
+        setNodes((nds) => [...nds, newNode]);
+        toast.info("New member card added");
+    };
+
+    const handleAddDivision = () => {
+        const name = prompt("Enter new division name (e.g. Marketing):");
+        if (!name) return;
+
+        const newId = uuidv4();
+        const newDivision: DivisionData = {
+            id: newId,
+            name,
+            nodes: [{
+                id: uuidv4(),
+                type: 'org',
+                position: { x: 250, y: 0 },
+                data: { name: `${name} Lead`, position: 'Division Head', isRoot: true },
+            }],
+            edges: []
+        };
+
+        setDivisions(prev => [...prev, newDivision]);
+        setActiveDivisionId(newId);
+        toast.success(`Created ${name} division chart`);
+    };
+
+    const handleDeleteDivision = (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
+        if (divisions.length <= 1) {
+            toast.error("Cannot delete the last division");
+            return;
+        }
+        if (!confirm("Are you sure you want to delete this division chart?")) return;
+
+        const newDivisions = divisions.filter(d => d.id !== id);
+        setDivisions(newDivisions);
+        if (activeDivisionId === id) {
+            setActiveDivisionId(newDivisions[0].id);
+        }
+        toast.success("Division removed");
+    };
+
+    const handleSave = () => {
+        console.log("Saving All Divisions:", divisions);
+        toast.success("All charts saved locally (demo)");
     };
 
     return (
-        <div className="space-y-6">
-            <div className="flex justify-between items-center no-print">
-                <div>
-                    <h2 className="text-xl font-bold dark:text-white">Organization Structure</h2>
-                    <p className="text-sm text-slate-500">Visual hierarchy of VENOM team.</p>
+        <div className="h-[85vh] w-full flex flex-col bg-slate-50 dark:bg-slate-950 rounded-xl overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800">
+            {/* Toolbar */}
+            <div className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-6 flex items-center justify-between z-20 relative">
+                <div className="flex items-center gap-4">
+                    <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+                        {divisions.map(div => (
+                            <div
+                                key={div.id}
+                                onClick={() => setActiveDivisionId(div.id)}
+                                className={`
+                                    px-3 py-1.5 text-sm font-medium rounded-md cursor-pointer flex items-center gap-2 transition-all
+                                    ${activeDivisionId === div.id
+                                        ? 'bg-white dark:bg-slate-700 shadow-sm text-purple-600 dark:text-purple-400'
+                                        : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                                    }
+                                `}
+                            >
+                                {div.name}
+                                {divisions.length > 1 && (
+                                    <span
+                                        onClick={(e) => handleDeleteDivision(e, div.id)}
+                                        className="opacity-50 hover:opacity-100 hover:text-red-500"
+                                    >
+                                        <X size={12} />
+                                    </span>
+                                )}
+                            </div>
+                        ))}
+                        <button
+                            onClick={handleAddDivision}
+                            className="px-2 py-1.5 text-slate-400 hover:text-purple-600 transition"
+                            title="Add New Division Chart"
+                        >
+                            <Plus size={16} />
+                        </button>
+                    </div>
                 </div>
-                <button
-                    onClick={handlePrint}
-                    className="bg-slate-900 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-slate-800 transition"
+
+                <div className="flex gap-3">
+                    <button
+                        onClick={handleAddNode}
+                        className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition shadow-lg shadow-purple-500/20"
+                    >
+                        <Plus size={16} /> Add Member
+                    </button>
+                    <button
+                        onClick={handleSave}
+                        className="flex items-center gap-2 px-4 py-2 bg-slate-900 dark:bg-slate-700 hover:bg-slate-800 text-white rounded-lg text-sm font-medium transition"
+                    >
+                        <Save size={16} /> Save Changes
+                    </button>
+                </div>
+            </div>
+
+            {/* Canvas */}
+            <div className="flex-1 w-full bg-slate-50 dark:bg-black/20 relative">
+                <ReactFlow
+                    // Key forces re-mount when switching divisions to ensure clean state transition if needed, 
+                    // though setNodes usually handles it. But key is safer for distinct charts.
+                    key={activeDivisionId}
+                    nodes={nodesWithHandlers}
+                    edges={edges}
+                    onNodesChange={onNodesChange}
+                    onEdgesChange={onEdgesChange}
+                    onConnect={onConnect}
+                    nodeTypes={nodeTypes}
+                    fitView
+                    minZoom={0.2}
+                    maxZoom={1.5}
+                    defaultEdgeOptions={{
+                        type: 'smoothstep',
+                        animated: true,
+                        style: { strokeWidth: 2, stroke: '#64748b' }
+                    }}
                 >
-                    <Printer size={18} /> Export PDF
-                </button>
-            </div>
+                    <Background color="#94a3b8" gap={20} size={1} />
+                    <Controls className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-xl" />
+                    <MiniMap
+                        nodeColor="#cbd5e1"
+                        maskColor="rgba(0, 0, 0, 0.1)"
+                        className="!bg-white dark:!bg-slate-900 border-2 dark:border-slate-700 rounded-lg overflow-hidden shadow-lg"
+                    />
 
-            <div className="overflow-auto bg-slate-50 dark:bg-slate-900/50 p-8 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 min-h-[500px]">
-                <div className="org-tree-container flex justify-center min-w-max">
-                    {tree.map(node => (
-                        <OrgNode key={node.id} node={node} />
-                    ))}
-                </div>
+                    <Panel position="top-center" className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-4 py-2 rounded-full shadow-lg border border-slate-200 dark:border-slate-700 text-xs text-slate-500 flex gap-4">
+                        <span className="flex items-center gap-1.5"><GripHorizontal size={14} className="text-purple-500" /> Draggable Nodes</span>
+                        <span className="flex items-center gap-1.5"><strong className="text-purple-500">·</strong> Connect dots to link</span>
+                        <span className="flex items-center gap-1.5 border-l pl-3 ml-1"><Layout size={14} className="text-purple-500" /> {divisions.find(d => d.id === activeDivisionId)?.name}</span>
+                    </Panel>
+                </ReactFlow>
             </div>
-
-            <style jsx global>{`
-        @media print {
-          .no-print, nav, aside { display: none !important; }
-          main { margin: 0 !important; padding: 0 !important; }
-          .org-tree-container { zoom: 80%; }
-        }
-      `}</style>
         </div>
     );
 }
 
-function OrgNode({ node }: { node: TreeNode }) {
+export default function OrgChart() {
     return (
-        <div className="flex flex-col items-center">
-            <div className="flex flex-col items-center relative z-10 mb-8">
-                <div className="w-16 h-16 rounded-full border-4 border-white dark:border-slate-800 shadow-md bg-white flex items-center justify-center overflow-hidden mb-2">
-                    {node.avatarUrl ?
-                        <img src={node.avatarUrl} className="w-full h-full object-cover" /> :
-                        <span className="text-xl font-bold text-slate-400">{node.name.charAt(0)}</span>
-                    }
-                </div>
-                <div className="bg-white dark:bg-slate-800 px-4 py-2 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 text-center min-w-[180px]">
-                    <div className="font-bold text-slate-900 dark:text-white text-sm">{node.name}</div>
-                    <div className="text-purple-600 dark:text-purple-400 text-xs font-semibold">{node.position}</div>
-                </div>
-            </div>
-
-            {node.children.length > 0 && (
-                <div className="relative flex justify-center gap-8 pt-4 border-t-2 border-slate-300 dark:border-slate-700">
-                    {/* Creating the connecting lines using pseudo-elements would be better but simple border-t works for tree visualization */}
-                    {node.children.map(child => (
-                        <div key={child.id} className="relative pt-4 before:absolute before:top-[-18px] before:left-1/2 before:-translate-x-1/2 before:w-px before:h-[18px] before:bg-slate-300 dark:before:bg-slate-700">
-                            <OrgNode node={child} />
-                        </div>
-                    ))}
-                </div>
-            )}
-        </div>
+        <ReactFlowProvider>
+            <OrgChartContent />
+        </ReactFlowProvider>
     );
 }
