@@ -16,12 +16,14 @@ import {
     ReactFlowProvider,
     MarkerType,
     NodeTypes,
+    useReactFlow,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Plus, Trash2, GripHorizontal, Save, Layers, Layout, X } from "lucide-react";
+import { Plus, Trash2, GripHorizontal, Save, Layers, Layout, X, Download } from "lucide-react";
 import OrgNode, { OrgNodeData } from './OrgNode';
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from 'sonner';
+import { toPng } from 'html-to-image';
 
 const nodeTypes: NodeTypes = {
     org: OrgNode,
@@ -53,11 +55,12 @@ const initialDivisions: DivisionData[] = [
 function OrgChartContent() {
     const [divisions, setDivisions] = useState<DivisionData[]>(initialDivisions);
     const [activeDivisionId, setActiveDivisionId] = useState<string>('main');
+    const { getNodes, getNodesBounds, getViewport } = useReactFlow();
 
     // These local states track the *currently active* chart
     // We synchronize them back to the divisions array on change/switch
-    const [nodes, setNodes, onNodesChange] = useNodesState([]);
-    const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+    const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+    const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
     // When switching tabs, save current state to the old tab (implicitly handled by syncing)
     // and load the new tab's state
@@ -201,8 +204,70 @@ function OrgChartContent() {
     };
 
     const handleSave = () => {
-        console.log("Saving All Divisions:", divisions);
-        toast.success("All charts saved locally (demo)");
+        localStorage.setItem('org-chart-divisions', JSON.stringify(divisions));
+        toast.success("Charts saved to local storage");
+    };
+
+    const handleRestore = () => {
+        const saved = localStorage.getItem('org-chart-divisions');
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                setDivisions(parsed);
+                // If the currently active division doesn't exist in the restored data, switch to the first one
+                if (!parsed.find((d: DivisionData) => d.id === activeDivisionId)) {
+                    setActiveDivisionId(parsed[0]?.id || 'main');
+                } else {
+                    // Force re-sync of nodes/edges for the active division
+                    const currentDiv = parsed.find((d: DivisionData) => d.id === activeDivisionId);
+                    if (currentDiv) {
+                        setNodes(currentDiv.nodes);
+                        setEdges(currentDiv.edges);
+                    }
+                }
+                toast.success("Charts restored from local storage");
+            } catch (e) {
+                console.error("Failed to restore", e);
+                toast.error("Failed to restore data");
+            }
+        } else {
+            toast.info("No saved charts found");
+        }
+    };
+
+    function downloadImage(dataUrl: string) {
+        const a = document.createElement('a');
+
+        a.setAttribute('download', 'org-chart.png');
+        a.setAttribute('href', dataUrl);
+        a.click();
+    }
+
+    const handleDownloadImage = () => {
+        // We select the viewport element to convert to image
+        // The standard class for the viewport is 'react-flow__viewport'
+        const viewportElement = document.querySelector('.react-flow__viewport') as HTMLElement;
+
+        if (!viewportElement) {
+            toast.error("Could not find chart viewport");
+            return;
+        }
+
+        const nodesBounds = getNodesBounds(getNodes());
+        const viewport = getViewport();
+        const imageWidth = nodesBounds.width;
+        const imageHeight = nodesBounds.height;
+
+        toPng(viewportElement, {
+            backgroundColor: '#ffffff',
+            width: imageWidth,
+            height: imageHeight,
+            style: {
+                width: imageWidth.toString(),
+                height: imageHeight.toString(),
+                transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`,
+            },
+        }).then(downloadImage);
     };
 
     return (
@@ -252,10 +317,22 @@ function OrgChartContent() {
                         <Plus size={16} /> Add Member
                     </button>
                     <button
+                        onClick={handleRestore}
+                        className="flex items-center gap-2 px-4 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-sm font-medium transition"
+                    >
+                        <Layers size={16} /> Restore
+                    </button>
+                    <button
                         onClick={handleSave}
                         className="flex items-center gap-2 px-4 py-2 bg-slate-900 dark:bg-slate-700 hover:bg-slate-800 text-white rounded-lg text-sm font-medium transition"
                     >
-                        <Save size={16} /> Save Changes
+                        <Save size={16} /> Save
+                    </button>
+                    <button
+                        onClick={handleDownloadImage}
+                        className="flex items-center gap-2 px-4 py-2 bg-slate-900 dark:bg-slate-700 hover:bg-slate-800 text-white rounded-lg text-sm font-medium transition"
+                    >
+                        <Download size={16} /> Download
                     </button>
                 </div>
             </div>
