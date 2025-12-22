@@ -12,7 +12,9 @@ import {
   LogOut,
   Target,
   Building2,
-  Calendar
+  Calendar,
+  CalendarDays,
+  NotebookPen
 } from "lucide-react";
 
 const menu = [
@@ -20,9 +22,9 @@ const menu = [
   { name: "Karyawan", path: "/dashboard/employees", icon: Users },
   { name: "Departemen", path: "/dashboard/departments", icon: Building2 },
   { name: "Kelola KPI", path: "/dashboard/kpi", icon: Target },
-  { name: "Penilaian", path: "/dashboard/evaluation", icon: ClipboardCheck },
+  { name: "Penilaian", path: "/dashboard/evaluation", icon: NotebookPen },
   { name: "Struktur Organisasi", path: "/dashboard/organization", icon: Network },
-  { name: "Kalender", path: "/dashboard/calendar", icon: Calendar },
+  { name: "Kalender", path: "/dashboard/calendar", icon: CalendarDays },
 ];
 
 export default function Sidebar() {
