@@ -19,6 +19,7 @@ interface Event {
     id: string;
     title: string;
     start: string;
+    end?: string;
     allDay?: boolean;
     color?: string;
     extendedProps?: {
@@ -138,6 +139,35 @@ export default function CalendarComponent() {
     const closeAddModal = () => {
         setIsAddModalOpen(false);
         setIsEditing(false);
+    };
+
+    const handleEventDrop = (info: any) => {
+        const { event } = info;
+        setEvents(prevEvents => prevEvents.map(ev => {
+            if (ev.id === event.id) {
+                return {
+                    ...ev,
+                    start: event.startStr,
+                    end: event.endStr,
+                    allDay: event.allDay
+                };
+            }
+            return ev;
+        }));
+    };
+
+    const handleEventResize = (info: any) => {
+        const { event } = info;
+        setEvents(prevEvents => prevEvents.map(ev => {
+            if (ev.id === event.id) {
+                return {
+                    ...ev,
+                    start: event.startStr,
+                    end: event.endStr
+                };
+            }
+            return ev;
+        }));
     };
 
     return (
@@ -275,6 +305,8 @@ export default function CalendarComponent() {
                 events={events}
                 select={handleDateSelect}
                 eventClick={handleEventClick}
+                eventDrop={handleEventDrop}
+                eventResize={handleEventResize}
                 eventBackgroundColor="#9333ea"
                 eventBorderColor="#9333ea"
             />
