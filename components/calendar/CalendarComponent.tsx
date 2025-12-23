@@ -6,63 +6,76 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import listPlugin from "@fullcalendar/list";
-// Note: We might need to adjust imports if UI components are in different paths.
-// Asking the user or checking structure first would be ideal, but I'll assume standard shadcn or similar paths based on `components/ui` existing.
-// I'll try to use standard HTML/Tailwind for modals if I'm not 100% sure on the UI components, 
-// BUT `components/ui` exists in the file list. I'll take a gamble on `Dialog` being there or I can just use a simple overlay if it fails.
-// Safest bet for "Premium" without breaking is to create a custom modal or use what's available.
-// Let's check `components/ui` first? 
-// No, I'll write the code to use standard Tailwind for the modal to be safe and dependency-free from internal UI libs I haven't fully inspected.
-// It ensures it works immediately.
+import { getVenomEvents, upsertVenomEvent, deleteVenomEvent } from "@/app/actions/calendar";
+import { v4 as uuidv4 } from "uuid";
 
 interface Event {
     id: string;
     title: string;
-    start: string;
-    end?: string;
+    start: string | Date;
+    end?: string | Date; // Remove null
     allDay?: boolean;
-    color?: string;
+    color?: string; // Remove null
     extendedProps?: {
-        description?: string;
+        description?: string; // Remove null
     };
 }
 
-const DEFAULT_EVENTS: Event[] = [
-    { id: '1', title: "Review Kinerja Q4", start: new Date().toISOString().split("T")[0], allDay: true, color: "#ef4444" },
-    { id: '2', title: "Team Building", start: new Date(Date.now() + 86400000 * 2).toISOString().split("T")[0], color: "#10b981" },
-    { id: '3', title: "Townhall Meeting", start: new Date(Date.now() + 86400000 * 5).toISOString().split("T")[0], color: "#3b82f6" },
-    { id: '4', title: "Deadline KPI", start: new Date(Date.now() + 86400000 * 10).toISOString().split("T")[0], color: "#f59e0b" },
-];
+const DEFAULT_EVENTS: Event[] = [];
 
 export default function CalendarComponent() {
     const [events, setEvents] = useState<Event[]>(DEFAULT_EVENTS);
     const [isLoaded, setIsLoaded] = useState(false);
 
-    // Load from LocalStorage on mount
-    React.useEffect(() => {
-        const savedEvents = localStorage.getItem('venom-calendar-events');
-        if (savedEvents) {
-            try {
-                setEvents(JSON.parse(savedEvents));
-            } catch (e) {
-                console.error("Failed to parse calendar events", e);
+    const handleDatesSet = (dateInfo: any) => {
+        const fetchEvents = async () => {
+            const events = await getVenomEvents(dateInfo.start, dateInfo.end);
+            if (events) {
+                const mapped = events.map((e: any) => ({
+                    id: e.id,
+                    title: e.title,
+                    start: e.start,
+                    end: e.end,
+                    allDay: e.allDay,
+                    color: e.color ?? undefined,
+                    extendedProps: {
+                        description: e.description
+                    }
+                }));
+                // @ts-ignore
+                setEvents(mapped);
             }
-        }
-        setIsLoaded(true);
-    }, []);
+            setIsLoaded(true);
+        };
+        fetchEvents();
+    };
 
-    // Save to LocalStorage whenever events change handles autosave
-    React.useEffect(() => {
-        if (isLoaded) {
-            localStorage.setItem('venom-calendar-events', JSON.stringify(events));
-        }
-    }, [events, isLoaded]);
+    // Initial load is now handled by datesSet which fires on mount automatically by FullCalendar
+
+
+    // Save to LocalStorage removed. Using Server Actions directly.
+
+    // Category Colors Configuration
+    const CATEGORY_COLORS: Record<string, string> = {
+        meeting: "#9333ea", // Purple
+        holiday: "#ef4444", // Red
+        training: "#3b82f6", // Blue
+        project: "#10b981", // Emerald
+        other: "#64748b"    // Slate
+    };
 
     const [selectedEvent, setSelectedEvent] = useState<any>(null);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
-    const [newEvent, setNewEvent] = useState({ id: '', title: '', start: '', description: '' });
+    const [newEvent, setNewEvent] = useState({
+        id: '',
+        title: '',
+        start: '',
+        end: '',
+        description: '',
+        category: 'meeting'
+    });
 
     const handleEventClick = (info: any) => {
         setSelectedEvent(info.event);
@@ -71,55 +84,118 @@ export default function CalendarComponent() {
 
     const handleDateSelect = (selectInfo: any) => {
         setIsEditing(false);
-        setNewEvent({ id: '', title: '', start: selectInfo.startStr, description: '' });
+
+        let uiEnd = '';
+        if (selectInfo.endStr) {
+            const endDate = new Date(selectInfo.endStr);
+            endDate.setDate(endDate.getDate() - 1);
+            uiEnd = endDate.toISOString().split("T")[0];
+        }
+
+        setNewEvent({
+            id: '',
+            title: '',
+            start: selectInfo.startStr,
+            end: uiEnd !== selectInfo.startStr ? uiEnd : '',
+            description: '',
+            category: 'meeting'
+        });
         setIsAddModalOpen(true);
     };
 
-    const handleAddOrUpdateEvent = (e: React.FormEvent) => {
+    const handleAddOrUpdateEvent = async (e: React.FormEvent) => {
         e.preventDefault();
         if (newEvent.title && newEvent.start) {
-            if (isEditing) {
-                setEvents(events.map(ev =>
-                    ev.id === newEvent.id
-                        ? { ...ev, title: newEvent.title, start: newEvent.start, extendedProps: { description: newEvent.description } }
-                        : ev
-                ));
-            } else {
-                setEvents([
-                    ...events,
-                    {
-                        id: createEventId(),
-                        title: newEvent.title,
-                        start: newEvent.start,
-                        allDay: true,
-                        color: "#9333ea",
-                        extendedProps: {
-                            description: newEvent.description
-                        }
-                    },
-                ]);
+
+            // Prepare Final DB Payload
+            let dbEnd = null;
+            if (newEvent.end) {
+                const d = new Date(newEvent.end);
+                d.setDate(d.getDate() + 1); // Convert back to exclusive for FC/DB
+                dbEnd = d.toISOString().split("T")[0];
             }
+
+            const color = CATEGORY_COLORS[newEvent.category] || CATEGORY_COLORS['other'];
+
+            let eventData: Event;
+
+            if (isEditing) {
+                eventData = {
+                    id: newEvent.id,
+                    title: newEvent.title,
+                    start: newEvent.start,
+                    end: dbEnd || undefined,
+                    color: color,
+                    extendedProps: { description: newEvent.description }
+                };
+
+                // Optimistic Update
+                setEvents(events.map(ev => ev.id === newEvent.id ? { ...ev, ...eventData } : ev));
+            } else {
+                const newId = createEventId();
+                eventData = {
+                    id: newId,
+                    title: newEvent.title,
+                    start: newEvent.start,
+                    end: dbEnd || undefined,
+                    allDay: true,
+                    color: color,
+                    extendedProps: { description: newEvent.description }
+                };
+
+                // Optimistic Update
+                setEvents([...events, eventData]);
+            }
+
+            // Save to DB
+            await upsertVenomEvent({
+                id: eventData.id,
+                title: eventData.title,
+                start: eventData.start as string,
+                end: eventData.end as string | undefined, // Ensure undefined if null
+                allDay: eventData.allDay,
+                description: eventData.extendedProps?.description,
+                color: eventData.color
+            });
+
             setIsAddModalOpen(false);
-            setNewEvent({ id: '', title: '', start: '', description: '' });
+            setNewEvent({ id: '', title: '', start: '', end: '', description: '', category: 'meeting' });
             setIsEditing(false);
         }
     };
 
-    const handleDeleteEvent = () => {
+    const handleDeleteEvent = async () => {
         if (selectedEvent) {
-            setEvents(events.filter(ev => ev.id !== selectedEvent.id));
+            const id = selectedEvent.id;
+            setEvents(events.filter(ev => ev.id !== id));
             setIsViewModalOpen(false);
             setSelectedEvent(null);
+
+            await deleteVenomEvent(id);
         }
     };
 
     const handleEditClick = () => {
         if (selectedEvent) {
+            // Restore Category
+            const currentColor = selectedEvent.backgroundColor;
+            const foundCategory = Object.keys(CATEGORY_COLORS).find(key => CATEGORY_COLORS[key] === currentColor) || 'other';
+
+            // Restore End Date (Exclusive -> Inclusive)
+            let uiEnd = '';
+            if (selectedEvent.end) {
+                const d = new Date(selectedEvent.end);
+                d.setDate(d.getDate() - 1);
+                uiEnd = d.toISOString().split("T")[0];
+            }
+
             setNewEvent({
                 id: selectedEvent.id,
                 title: selectedEvent.title,
-                start: selectedEvent.startStr || selectedEvent.start.toISOString().split("T")[0],
-                description: selectedEvent.extendedProps?.description || ''
+                start: selectedEvent.startStr || new Date(selectedEvent.start).toISOString().split("T")[0],
+                end: uiEnd,
+                description: selectedEvent.extendedProps?.description || '',
+                category: foundCategory
             });
             setIsEditing(true);
             setIsViewModalOpen(false);
@@ -128,7 +204,7 @@ export default function CalendarComponent() {
     };
 
     const createEventId = () => {
-        return String(events.length + 1) + '-' + Date.now();
+        return uuidv4();
     }
 
     const closeViewModal = () => {
@@ -141,33 +217,54 @@ export default function CalendarComponent() {
         setIsEditing(false);
     };
 
-    const handleEventDrop = (info: any) => {
+    const handleEventDrop = async (info: any) => {
         const { event } = info;
+        // Optimistic update
         setEvents(prevEvents => prevEvents.map(ev => {
             if (ev.id === event.id) {
                 return {
                     ...ev,
-                    start: event.startStr,
-                    end: event.endStr,
+                    start: event.start,
+                    end: event.end,
                     allDay: event.allDay
                 };
             }
             return ev;
         }));
+
+        await upsertVenomEvent({
+            id: event.id,
+            title: event.title,
+            start: event.start,
+            end: event.end,
+            allDay: event.allDay,
+            description: event.extendedProps?.description,
+            color: event.backgroundColor
+        });
     };
 
-    const handleEventResize = (info: any) => {
+    const handleEventResize = async (info: any) => {
         const { event } = info;
         setEvents(prevEvents => prevEvents.map(ev => {
             if (ev.id === event.id) {
                 return {
                     ...ev,
-                    start: event.startStr,
-                    end: event.endStr
+                    start: event.start,
+                    end: event.end
                 };
             }
             return ev;
         }));
+
+        await upsertVenomEvent({
+            id: event.id,
+            title: event.title,
+            start: event.start,
+            end: event.end,
+            allDay: event.allDay, // Resize usually implies timeGrid, so maybe not allDay? FullCalendar handles property consistency.
+            description: event.extendedProps?.description,
+            color: event.backgroundColor
+        });
     };
 
     return (
@@ -248,16 +345,48 @@ export default function CalendarComponent() {
                                         placeholder="Rapat Penting"
                                     />
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-400 mb-1">Tanggal</label>
-                                    <input
-                                        type="date"
-                                        required
-                                        value={newEvent.start}
-                                        onChange={(e) => setNewEvent({ ...newEvent, start: e.target.value })}
-                                        className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                    />
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="col-span-2">
+                                        <label className="block text-sm font-medium text-slate-400 mb-1">Kategori</label>
+                                        <div className="grid grid-cols-5 gap-2">
+                                            {Object.entries(CATEGORY_COLORS).map(([cat, color]) => (
+                                                <button
+                                                    key={cat}
+                                                    type="button"
+                                                    onClick={() => setNewEvent({ ...newEvent, category: cat })}
+                                                    className={`h-8 rounded-md border transition-all ${newEvent.category === cat ? 'border-white ring-2 ring-white/20' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                                                    style={{ backgroundColor: color }}
+                                                    title={cat.charAt(0).toUpperCase() + cat.slice(1)}
+                                                />
+                                            ))}
+                                        </div>
+                                        <div className="mt-1 text-xs text-slate-500 text-right capitalize">
+                                            {newEvent.category}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-400 mb-1">Mulai</label>
+                                        <input
+                                            type="date"
+                                            required
+                                            value={newEvent.start}
+                                            onChange={(e) => setNewEvent({ ...newEvent, start: e.target.value })}
+                                            className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-400 mb-1">Selesai (Sampai)</label>
+                                        <input
+                                            type="date"
+                                            value={newEvent.end}
+                                            onChange={(e) => setNewEvent({ ...newEvent, end: e.target.value })}
+                                            className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                            min={newEvent.start}
+                                        />
+                                    </div>
                                 </div>
+
                                 <div>
                                     <label className="block text-sm font-medium text-slate-400 mb-1">Deskripsi</label>
                                     <textarea
@@ -307,6 +436,7 @@ export default function CalendarComponent() {
                 eventClick={handleEventClick}
                 eventDrop={handleEventDrop}
                 eventResize={handleEventResize}
+                datesSet={handleDatesSet}
                 eventBackgroundColor="#9333ea"
                 eventBorderColor="#9333ea"
             />

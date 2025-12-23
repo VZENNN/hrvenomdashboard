@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useState, useMemo, useEffect } from 'react';
+import { getVenomDivisions, saveVenomDivision, deleteVenomDivision } from '@/app/actions/organization';
 import {
     ReactFlow,
     useNodesState,
@@ -57,47 +58,46 @@ function OrgChartContent() {
     const [activeDivisionId, setActiveDivisionId] = useState<string>('main');
     const { getNodes, getNodesBounds, getViewport } = useReactFlow();
 
+    // Load initial data from DB
+    useEffect(() => {
+        const loadData = async () => {
+            const dbDivisions = await getVenomDivisions();
+            if (dbDivisions && dbDivisions.length > 0) {
+                // Parse JSON fields
+                const parsed = dbDivisions.map((d: any) => ({
+                    id: d.id,
+                    name: d.name,
+                    nodes: d.nodes,     // Prisma Json type automatically parses to object
+                    edges: d.edges
+                }));
+                setDivisions(parsed);
+                setActiveDivisionId(parsed[0].id);
+                // Also set nodes/edges for first load
+                setNodes(parsed[0].nodes);
+                setEdges(parsed[0].edges);
+            }
+        };
+        loadData();
+    }, []);
+
     // These local states track the *currently active* chart
     // We synchronize them back to the divisions array on change/switch
     const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
-    // When switching tabs, save current state to the old tab (implicitly handled by syncing)
-    // and load the new tab's state
-
-    // Actually, checking "onNodesChange" is purely local visual state.
-    // We need to sync this state back to the `divisions` state when it changes or before we switch.
-    // To make it simpler, we will just use an effect or custom setter that updates both.
-
-    // Better approach: When activeDivisionId changes, load that data into nodes/edges.
+    // Sync active division on switch
     useEffect(() => {
         const division = divisions.find(d => d.id === activeDivisionId);
         if (division) {
             setNodes(division.nodes);
             setEdges(division.edges);
         }
-    }, [activeDivisionId]); // depends on divisions length or deep compare? No, just ID change triggers reload.
-    // Issue: If we modify nodes, we need to update "divisions" state too so it persists when we switch back.
-
-    // Let's create wrappers for setNodes/setEdges that also update the main store
-    const updateDivisionData = useCallback((newNodes: Node[], newEdges: Edge[]) => {
-        setDivisions(prev => prev.map(d => {
-            if (d.id === activeDivisionId) {
-                return { ...d, nodes: newNodes, edges: newEdges };
-            }
-            return d;
-        }));
     }, [activeDivisionId]);
 
-    // We can hook into the change events. 
-    // However, useNodesState's onNodesChange is for internal react-flow logic (dragging etc).
-    // We should probably just sync on specific actions or use an effect that detects changes in `nodes` / `edges` 
-    // and writes them back to `divisions`.
+    // Update local store (divisions) when nodes/edges change
     useEffect(() => {
         setDivisions(prev => prev.map(d => {
             if (d.id === activeDivisionId) {
-                // Only update if actually different to prevent cycles? 
-                // Creating new object refs might trigger re-renders, but fine for this scale.
                 return { ...d, nodes: nodes, edges: edges };
             }
             return d;
@@ -158,14 +158,13 @@ function OrgChartContent() {
             data: {
                 name: 'New Employee',
                 position: 'Role Title',
-                // onEdit/onDelete will be injected by nodesWithHandlers
             },
         };
         setNodes((nds) => [...nds, newNode]);
         toast.info("New member card added");
     };
 
-    const handleAddDivision = () => {
+    const handleAddDivision = async () => {
         const name = prompt("Enter new division name (e.g. Marketing):");
         if (!name) return;
 
@@ -184,10 +183,18 @@ function OrgChartContent() {
 
         setDivisions(prev => [...prev, newDivision]);
         setActiveDivisionId(newId);
+
+        // Auto-save to DB
+        await saveVenomDivision({
+            id: newId,
+            name,
+            nodes: newDivision.nodes,
+            edges: newDivision.edges
+        });
         toast.success(`Created ${name} division chart`);
     };
 
-    const handleDeleteDivision = (e: React.MouseEvent, id: string) => {
+    const handleDeleteDivision = async (e: React.MouseEvent, id: string) => {
         e.stopPropagation();
         if (divisions.length <= 1) {
             toast.error("Cannot delete the last division");
@@ -200,40 +207,25 @@ function OrgChartContent() {
         if (activeDivisionId === id) {
             setActiveDivisionId(newDivisions[0].id);
         }
+
+        await deleteVenomDivision(id);
         toast.success("Division removed");
     };
 
-    const handleSave = () => {
-        localStorage.setItem('org-chart-divisions', JSON.stringify(divisions));
-        toast.success("Charts saved to local storage");
+    const handleSave = async () => {
+        // Save ALL divisions
+        const promises = divisions.map(d => saveVenomDivision({
+            id: d.id,
+            name: d.name,
+            nodes: d.nodes,
+            edges: d.edges
+        }));
+        await Promise.all(promises);
+        toast.success("Charts saved to database!");
     };
 
-    const handleRestore = () => {
-        const saved = localStorage.getItem('org-chart-divisions');
-        if (saved) {
-            try {
-                const parsed = JSON.parse(saved);
-                setDivisions(parsed);
-                // If the currently active division doesn't exist in the restored data, switch to the first one
-                if (!parsed.find((d: DivisionData) => d.id === activeDivisionId)) {
-                    setActiveDivisionId(parsed[0]?.id || 'main');
-                } else {
-                    // Force re-sync of nodes/edges for the active division
-                    const currentDiv = parsed.find((d: DivisionData) => d.id === activeDivisionId);
-                    if (currentDiv) {
-                        setNodes(currentDiv.nodes);
-                        setEdges(currentDiv.edges);
-                    }
-                }
-                toast.success("Charts restored from local storage");
-            } catch (e) {
-                console.error("Failed to restore", e);
-                toast.error("Failed to restore data");
-            }
-        } else {
-            toast.info("No saved charts found");
-        }
-    };
+    // Restore functionality removed as we load from DB now.
+    // Keeping button hidden or removing it from UI.
 
     function downloadImage(dataUrl: string) {
         const a = document.createElement('a');
@@ -316,12 +308,7 @@ function OrgChartContent() {
                     >
                         <Plus size={16} /> Add Member
                     </button>
-                    <button
-                        onClick={handleRestore}
-                        className="flex items-center gap-2 px-4 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-sm font-medium transition"
-                    >
-                        <Layers size={16} /> Restore
-                    </button>
+                    {/* Restore button used to be here */}
                     <button
                         onClick={handleSave}
                         className="flex items-center gap-2 px-4 py-2 bg-slate-900 dark:bg-slate-700 hover:bg-slate-800 text-white rounded-lg text-sm font-medium transition"

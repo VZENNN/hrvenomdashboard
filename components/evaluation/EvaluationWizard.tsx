@@ -98,8 +98,8 @@ export default function EvaluationWizard({ users, currentUserId }: Props) {
     const handleSubmit = async () => {
         setLoading(true);
         const items = [
-            ...behavioralKpis.map(k => ({ ...scores[k.id], criteriaId: k.id, type: 'BEHAVIORAL' })),
-            ...technicalKpis.map(k => ({ ...scores[k.id], criteriaId: k.id, type: 'TECHNICAL' }))
+            ...behavioralKpis.map(k => ({ ...scores[k.id], criteriaId: k.id, type: 'BEHAVIORAL' as const })),
+            ...technicalKpis.map(k => ({ ...scores[k.id], criteriaId: k.id, type: 'TECHNICAL' as const }))
         ];
 
         const payload = {

@@ -10,6 +10,8 @@ import Search from '@/components/ui/Search';
 
 import { EmployeeStatus } from '@prisma/client';
 
+import { getEmployees } from '@/app/actions/employees';
+
 export default async function EmployeesPage({
     searchParams
 }: {
@@ -18,30 +20,21 @@ export default async function EmployeesPage({
     const params = await searchParams;
     const query = params?.q || '';
     const currentPage = Number(params?.page) || 1;
-    const itemsPerPage = 10;
+    // const itemsPerPage = 10; // Handled by default in action
 
     const departmentId = params?.departmentId;
     const position = params?.position;
     const status = params?.status as EmployeeStatus | undefined;
 
-    // Build Where Clause
-    const where: any = {
-        AND: [
-            {
-                OR: [
-                    { name: { contains: query, mode: 'insensitive' } },
-                    { employeeId: { contains: query, mode: 'insensitive' } }
-                ]
-            }
-        ]
-    };
-
-    if (departmentId) where.AND.push({ departmentId });
-    if (position) where.AND.push({ position });
-    if (status) where.AND.push({ status });
-
-    const totalItems = await prisma.user.count({ where });
-    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    // Fetch Data via Server Action
+    const { data: employees, totalPages } = await getEmployees({
+        query,
+        page: currentPage,
+        limit: 10,
+        departmentId,
+        position,
+        status
+    });
 
     const departments = await prisma.department.findMany({
         orderBy: { name: 'asc' }
@@ -51,18 +44,6 @@ export default async function EmployeesPage({
         select: { position: true },
         distinct: ['position'],
         orderBy: { position: 'asc' }
-    });
-
-    const employees = await prisma.user.findMany({
-        where,
-        include: {
-            department: true
-        },
-        orderBy: {
-            createdAt: 'desc'
-        },
-        skip: (currentPage - 1) * itemsPerPage,
-        take: itemsPerPage
     });
 
     return (

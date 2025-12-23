@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { KpiType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { z } from "zod";
 
 export async function getEvaluationMetadata(userId: string) {
     const user = await prisma.user.findUnique({
@@ -48,79 +49,86 @@ export async function checkExistingEvaluation(userId: string, month: number, yea
     return !!exists;
 }
 
-export async function createEvaluation(data: any) {
-    // Parsing logic handled in component usually, but here we expect clean data structure
-    // data = { userId, appraiserId, month, year, items: [{ kpiId, target, actual, score }] }
+const EvaluationItemSchema = z.object({
+    criteriaId: z.string(),
+    target: z.string().optional().nullable(),
+    actual: z.string().optional().nullable(),
+    score: z.union([z.number(), z.string()]).transform((val) => Number(val)),
+    weight: z.union([z.number(), z.string()]).transform((val) => Number(val)),
+    comment: z.string().optional().nullable(),
+    type: z.enum(['BEHAVIORAL', 'TECHNICAL'])
+});
 
-    const { userId, appraiserId, month, year, items, feedback } = data;
+const CreateEvaluationSchema = z.object({
+    userId: z.string().min(1, "Employee ID is required"),
+    appraiserId: z.string().min(1, "Appraiser ID is required"),
+    month: z.union([z.number(), z.string()]).transform((val) => Number(val)),
+    year: z.union([z.number(), z.string()]).transform((val) => Number(val)),
+    items: z.array(EvaluationItemSchema),
+    feedback: z.string().optional().nullable()
+});
+
+type CreateEvaluationInput = z.input<typeof CreateEvaluationSchema>;
+
+export async function createEvaluation(data: CreateEvaluationInput) {
+    // 1. Validate Input
+    const result = CreateEvaluationSchema.safeParse(data);
+
+    if (!result.success) {
+        console.error("Validation Error:", result.error);
+        return { error: "Invalid evaluation data." };
+    }
+
+    const { userId, appraiserId, month, year, items, feedback } = result.data;
 
     // Calculate Scores Server Side for security
     let totalBehaviorScore = 0;
-    let countBehavior = 0;
+    let totalTechnicalScoreWeighted = 0;
 
-    let totalTechnicalScoreWeighted = 0; // Sum of (Score * Weight%)
-    let totalTechnicalWeight = 0;
-
-    // We need to re-fetch KPIs to adhere to weight rules if dynamic, but for now we trust the inputs 
-    // or better, we classify items by Type based on DB.
-
-    // Let's simplified: We trust the "Score" and "Weight" sent from client for now, 
-    // BUT proper way is recalculating. I will recalculate final score.
-
-    const behaviorItems = items.filter((i: any) => i.type === 'BEHAVIORAL');
-    const technicalItems = items.filter((i: any) => i.type === 'TECHNICAL');
+    const behaviorItems = items.filter(i => i.type === 'BEHAVIORAL');
+    const technicalItems = items.filter(i => i.type === 'TECHNICAL');
 
     // Behavior: Simple Average
     if (behaviorItems.length > 0) {
-        const sum = behaviorItems.reduce((acc: number, item: any) => acc + Number(item.score), 0);
+        const sum = behaviorItems.reduce((acc, item) => acc + item.score, 0);
         totalBehaviorScore = sum / behaviorItems.length;
     }
 
-    // Technical: Weighted Sum
-    // In the screenshot: Bobot (30%) * Nilai (3) = 0.9
-    // Total Nilai = Sum of these.
-    // So Score is Sum (Weight/100 * Score)
-
+    // Technical: Weighted Sum (Score * Weight%)
     if (technicalItems.length > 0) {
-        technicalItems.forEach((item: any) => {
-            totalTechnicalScoreWeighted += (Number(item.weight) / 100) * Number(item.score);
-            totalTechnicalWeight += Number(item.weight);
+        technicalItems.forEach(item => {
+            totalTechnicalScoreWeighted += (item.weight / 100) * item.score;
         });
     }
 
     // Final Score: (Behavior * 40%) + (Technical * 60%)
-    // Wait, in screenshot E. NILAI TOTAL
-    // Bagian C (Perilaku) 4.25 (Rata-rata) * 40% = 1.7
-    // Bagian D (KPI) 2.9 (Total Nilai from weighted sum) * 60% = 1.74
-    // Total = 3.44.
-
     const finalScore = (totalBehaviorScore * 0.4) + (totalTechnicalScoreWeighted * 0.6);
 
     try {
         await prisma.evaluation.create({
             data: {
                 userId,
-                appraiserId, // Need to pass this from session
-                month: Number(month),
-                year: Number(year),
+                appraiserId,
+                month,
+                year,
                 behaviorScore: totalBehaviorScore,
                 technicalScore: totalTechnicalScoreWeighted,
                 finalScore: finalScore,
                 feedback,
                 items: {
-                    create: items.map((item: any) => ({
+                    create: items.map(item => ({
                         criteriaId: item.criteriaId,
                         target: item.target,
                         actual: item.actual,
-                        weight: Number(item.weight),
-                        score: Number(item.score),
-                        comment: item.comment // Added comment field
+                        weight: item.weight,
+                        score: item.score,
+                        comment: item.comment
                     }))
                 }
             }
         });
     } catch (e) {
-        console.error(e);
+        console.error("Database Error:", e);
         return { error: "Failed to save evaluation." };
     }
 
