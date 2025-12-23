@@ -151,3 +151,41 @@ export async function updateEmployee(id: string, formData: FormData) {
     revalidatePath("/dashboard/employees");
     return { success: true };
 }
+
+export async function getEmployeeEvaluationHistory(id: string, year: number) {
+    const user = await prisma.user.findUnique({
+        where: { id },
+        include: { department: true }
+    });
+
+    if (!user) return null;
+
+    const evaluations = await prisma.evaluation.findMany({
+        where: {
+            userId: id,
+            year: year
+        },
+        orderBy: {
+            month: 'asc'
+        },
+        include: {
+            appraiser: {
+                select: { name: true }
+            }
+        }
+    });
+
+    // Calculate Annual Average
+    // Logic: Sum of finalScores / Count of evaluations
+    let annualAverage = 0;
+    if (evaluations.length > 0) {
+        const sum = evaluations.reduce((acc, curr) => acc + curr.finalScore, 0);
+        annualAverage = sum / evaluations.length;
+    }
+
+    return {
+        user,
+        evaluations,
+        annualAverage
+    };
+}
