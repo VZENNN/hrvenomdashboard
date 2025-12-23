@@ -37,6 +37,17 @@ export async function getEvaluationMetadata(userId: string) {
     return { user, behavioral, technical };
 }
 
+export async function checkExistingEvaluation(userId: string, month: number, year: number) {
+    const exists = await prisma.evaluation.findFirst({
+        where: {
+            userId,
+            month,
+            year
+        }
+    });
+    return !!exists;
+}
+
 export async function createEvaluation(data: any) {
     // Parsing logic handled in component usually, but here we expect clean data structure
     // data = { userId, appraiserId, month, year, items: [{ kpiId, target, actual, score }] }
