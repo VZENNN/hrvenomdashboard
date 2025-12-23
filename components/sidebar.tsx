@@ -44,7 +44,7 @@ export default function Sidebar() {
       </div>
 
       <nav className="flex flex-col gap-2 flex-1">
-        {menu.map((item) => {
+        {menu.map((item, index) => {
           // Logic: Dashboard must be exact match. Others can be sub-paths (e.g. /dashboard/employees/add)
           const isActive = item.path === '/dashboard'
             ? pathname === item.path
@@ -54,13 +54,15 @@ export default function Sidebar() {
             <Link
               key={item.name}
               href={item.path}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group focus:outline-none ${isActive
-                ? "bg-purple-600 text-white shadow-lg shadow-purple-900/20"
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 group focus:outline-none transform-gpu hover:translate-x-1 ${isActive
+                ? "bg-purple-600 text-white shadow-lg shadow-purple-900/30"
                 : "text-slate-400 hover:bg-slate-900 hover:text-slate-100"
                 }`}
+              style={{ animationDelay: `${index * 50}ms` }}
             >
-              <item.icon size={20} className={isActive ? "text-white" : "group-hover:text-purple-300 transition-colors"} />
+              <item.icon size={20} className={`transition-all duration-300 ${isActive ? "text-white" : "group-hover:text-purple-400 group-hover:scale-110"}`} />
               <span className="font-medium text-sm">{item.name}</span>
+              {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white animate-pulse" />}
             </Link>
           );
         })}

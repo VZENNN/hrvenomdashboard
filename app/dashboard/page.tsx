@@ -115,17 +115,15 @@ export default async function DashboardPage() {
             {topScorers && topScorers.length > 0 ? (
               <div className="space-y-4">
                 {topScorers.map((scorer, index) => (
-                  <div key={scorer.id} className="flex items-center gap-4 pb-4 border-b border-slate-200 dark:border-slate-700 last:border-b-0 last:pb-0">
+                  <div key={scorer.id} className={`flex items-center gap-4 pb-4 border-b border-slate-200 dark:border-slate-700 last:border-b-0 last:pb-0 animate-slide-in-up opacity-0 stagger-${index + 1}`} style={{ animationFillMode: 'forwards' }}>
                     <div className="flex-shrink-0">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg ${
-                        index === 0 ? 'bg-gradient-to-tr from-amber-400 to-amber-600' :
-                        index === 1 ? 'bg-gradient-to-tr from-slate-300 to-slate-400' :
-                        'bg-gradient-to-tr from-orange-400 to-orange-600'
-                      } shadow-lg ring-2 ${
-                        index === 0 ? 'ring-amber-100 dark:ring-amber-900' :
-                        index === 1 ? 'ring-slate-100 dark:ring-slate-700' :
-                        'ring-orange-100 dark:ring-orange-900'
-                      }`}>
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg transition-transform duration-300 hover:scale-110 ${index === 0 ? 'bg-gradient-to-tr from-amber-400 to-amber-600' :
+                          index === 1 ? 'bg-gradient-to-tr from-slate-300 to-slate-400' :
+                            'bg-gradient-to-tr from-orange-400 to-orange-600'
+                        } shadow-lg ring-2 ${index === 0 ? 'ring-amber-100 dark:ring-amber-900' :
+                          index === 1 ? 'ring-slate-100 dark:ring-slate-700' :
+                            'ring-orange-100 dark:ring-orange-900'
+                        }`}>
                         {index + 1}
                       </div>
                     </div>
@@ -133,11 +131,10 @@ export default async function DashboardPage() {
                       <h4 className="font-semibold text-slate-900 dark:text-white truncate">{scorer.user.name}</h4>
                       <p className="text-sm text-slate-500 dark:text-slate-400 truncate">{scorer.user.position}</p>
                     </div>
-                    <div className={`font-bold text-lg whitespace-nowrap ${
-                      index === 0 ? 'text-amber-500' :
-                      index === 1 ? 'text-slate-400' :
-                      'text-orange-500'
-                    }`}>
+                    <div className={`font-bold text-lg whitespace-nowrap ${index === 0 ? 'text-amber-500' :
+                        index === 1 ? 'text-slate-400' :
+                          'text-orange-500'
+                      }`}>
                       {scorer.finalScore.toFixed(2)}
                     </div>
                   </div>
@@ -180,14 +177,14 @@ function StatCard({ title, value, icon: Icon, color, subtext }: any) {
   };
 
   return (
-    <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-md transition-shadow">
+    <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 hover-lift group">
       <div className="flex items-start justify-between">
         <div>
           <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">{title}</p>
           <h3 className="text-3xl font-bold text-slate-900 dark:text-white">{value}</h3>
           {subtext && <p className="text-xs text-slate-400 mt-2">{subtext}</p>}
         </div>
-        <div className={`p-3 rounded-xl ${colorStyles[color] || colorStyles.blue}`}>
+        <div className={`p-3 rounded-xl transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 ${colorStyles[color] || colorStyles.blue}`}>
           <Icon size={24} />
         </div>
       </div>

@@ -20,8 +20,8 @@ export default async function EvaluationListPage({ searchParams }: {
     const monthFilter = params?.month ? Number(params.month) : null;
 
     const where = monthFilter
-    ? { month: monthFilter }
-    : {};
+        ? { month: monthFilter }
+        : {};
 
 
     const totalItems = await prisma.evaluation.count({ where });
@@ -39,11 +39,11 @@ export default async function EvaluationListPage({ searchParams }: {
     });
 
     const getGrade = (score: number) => {
-        if (score <= 1.50) return { label: 'Poor', color: 'bg-red-100 text-red-700' };
-        if (score <= 2.50) return { label: 'Unsatisfactory', color: 'bg-orange-100 text-orange-700' };
-        if (score <= 3.50) return { label: 'Fair', color: 'bg-yellow-100 text-yellow-700' };
-        if (score <= 4.50) return { label: 'Good', color: 'bg-blue-100 text-blue-700' };
-        return { label: 'Very Good', color: 'bg-green-100 text-green-700' };
+        if (score <= 1.50) return { label: 'Poor', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' };
+        if (score <= 2.50) return { label: 'Unsatisfactory', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' };
+        if (score <= 3.50) return { label: 'Fair', color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' };
+        if (score <= 4.50) return { label: 'Good', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' };
+        return { label: 'Very Good', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' };
     };
 
     return (
@@ -55,7 +55,7 @@ export default async function EvaluationListPage({ searchParams }: {
                 </div>
                 <Link
                     href="/dashboard/evaluation/create"
-                    className="bg-purple-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 font-medium hover:bg-purple-700 transition shadow-lg shadow-purple-200 dark:shadow-none"
+                    className="bg-purple-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 font-medium hover:bg-purple-700 hover:scale-105 transition-all duration-200 shadow-lg shadow-purple-200 dark:shadow-none"
                 >
                     <Plus size={18} /> New Evaluation
                 </Link>
@@ -88,7 +88,7 @@ export default async function EvaluationListPage({ searchParams }: {
                             evaluations.map(ev => {
                                 const grade = getGrade(ev.finalScore);
                                 return (
-                                    <tr key={ev.id} className="border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
+                                    <tr key={ev.id} className="border-b border-slate-50 dark:border-slate-800 hover:bg-purple-50/50 dark:hover:bg-purple-900/10 transition-all duration-200 group">
                                         <td className="p-4">
                                             <div className="font-medium text-slate-900 dark:text-white">{ev.user.name}</div>
                                             <div className="text-xs text-slate-400">{ev.user.position}</div>
@@ -100,7 +100,7 @@ export default async function EvaluationListPage({ searchParams }: {
                                             {ev.finalScore.toFixed(2)}
                                         </td>
                                         <td className="p-4">
-                                            <span className={`px-2 py-1 rounded-md text-xs font-bold uppercase tracking-wider ${grade.color}`}>
+                                            <span className={`px-2 py-1 rounded-md text-xs font-bold uppercase tracking-wider transition-transform duration-200 hover:scale-105 inline-block ${grade.color}`}>
                                                 {grade.label}
                                             </span>
                                         </td>
@@ -110,7 +110,7 @@ export default async function EvaluationListPage({ searchParams }: {
                                         <td className="p-4 text-right">
                                             <Link
                                                 href={`/dashboard/evaluation/${ev.id}`}
-                                                className="p-2 text-slate-400 hover:text-purple-600 transition inline-block"
+                                                className="p-2 text-slate-400 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg transition-all duration-200 inline-block"
                                             >
                                                 <Eye size={18} />
                                             </Link>

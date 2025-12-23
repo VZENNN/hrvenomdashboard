@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { Handle, Position, NodeProps, NodeResizer } from '@xyflow/react';
+import { Handle, Position, NodeProps, Node } from '@xyflow/react';
 import { User } from '@prisma/client';
 import { BadgeCheck, Trash2, User as UserIcon } from 'lucide-react';
 
@@ -13,8 +13,8 @@ export type OrgNodeData = {
     onDelete?: (id: string) => void;
 };
 
-const OrgNode = ({ data, id, selected }: NodeProps<any>) => {
-    const { name, position, avatarUrl, onEdit, onDelete, isRoot } = data as OrgNodeData;
+const OrgNode = ({ data, id, selected }: NodeProps<Node<OrgNodeData>>) => {
+    const { name, position, avatarUrl, onEdit, onDelete, isRoot } = data;
 
     return (
         <div className={`

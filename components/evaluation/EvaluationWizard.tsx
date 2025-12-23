@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { User, Department, KpiCriteria, KpiType } from '@prisma/client';
-import { getEvaluationMetadata, createEvaluation } from '@/app/actions/evaluations';
+import { getEvaluationMetadata, createEvaluation, checkExistingEvaluation } from '@/app/actions/evaluations';
 import { useEvaluationScoring } from '@/hooks/useEvaluation';
 import { Loader2, Save, Calculator, Trophy } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 interface UserWithDept extends User {
     department: Department | null;
@@ -34,8 +35,40 @@ export default function EvaluationWizard({ users, currentUserId }: Props) {
     const { scores, setScores, updateScore, results: finalResult } = useEvaluationScoring(behavioralKpis, technicalKpis);
     const [feedback, setFeedback] = useState('');
 
+    // Check for existing evaluation on selection change
+    useEffect(() => {
+        const checkDuplicate = async () => {
+            if (selectedUserId && month && year) {
+                const exists = await checkExistingEvaluation(selectedUserId, month, year);
+                if (exists) {
+                    toast.error("Evaluation already exists!", {
+                        description: `This employee has already been evaluated for ${month}/${year}.`
+                    });
+                    setSelectedUserId(''); // Reset selection to force re-select
+                }
+            }
+        };
+
+        // Debounce slightly to avoid rapid checks if typing year manually
+        const timer = setTimeout(() => {
+            checkDuplicate();
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, [selectedUserId, month, year]);
+
     const handleStart = async () => {
         if (!selectedUserId) return;
+
+        // Final check before starting
+        const exists = await checkExistingEvaluation(selectedUserId, month, year);
+        if (exists) {
+            toast.error("Evaluation already exists!", {
+                description: `This employee has already been evaluated for ${month}/${year}.`
+            });
+            return;
+        }
+
         setLoading(true);
         try {
             const data = await getEvaluationMetadata(selectedUserId);
@@ -56,7 +89,7 @@ export default function EvaluationWizard({ users, currentUserId }: Props) {
             setScores(initialScores);
             setStep(2);
         } catch (err) {
-            alert("Failed to load data");
+            toast.error("Failed to load data");
         } finally {
             setLoading(false);
         }
