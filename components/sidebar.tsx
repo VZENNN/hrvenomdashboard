@@ -27,7 +27,18 @@ const menu = [
   { name: "Kalender", path: "/dashboard/calendar", icon: CalendarDays },
 ];
 
-export default function Sidebar() {
+// ... imports
+
+interface SidebarProps {
+  user?: {
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+    role?: string;
+  }
+}
+
+export default function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
 
   return (
@@ -68,9 +79,22 @@ export default function Sidebar() {
         })}
       </nav>
 
+      {/* User Profile Section */}
+      {user && (
+        <div className="mb-4 px-4 py-3 bg-slate-900/50 rounded-xl border border-slate-800/50 flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 font-bold border border-purple-500/30">
+            {user.image ? <img src={user.image} className="w-full h-full rounded-full" /> : user.name?.charAt(0)}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-white truncate">{user.name}</p>
+            <p className="text-xs text-slate-500 truncate capitalize">{user.role?.toLowerCase() || 'User'}</p>
+          </div>
+        </div>
+      )}
+
       <button
         onClick={() => signOut({ callbackUrl: "/" })}
-        className="mt-autoflex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-red-950/30 hover:text-red-400 rounded-lg transition-all duration-200 w-full text-left flex"
+        className="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-red-950/30 hover:text-red-400 rounded-lg transition-all duration-200 w-full text-left"
       >
         <LogOut size={20} />
         <span className="font-medium text-sm">Logout</span>
