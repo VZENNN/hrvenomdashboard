@@ -155,3 +155,30 @@ enum KpiType {
   BEHAVIORAL  // Untuk Bagian C (General)
   TECHNICAL   // Untuk Bagian D (KPI)
 }
+
+// ==============================
+// 5. VENOM MODULES (ORG & CALENDAR)
+// ==============================
+
+model VenomDivision {
+  id        String   @id @default(cuid())
+  name      String
+  nodes     Json     // Stores React Flow nodes structure
+  edges     Json     // Stores React Flow edges structure
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model VenomCalendarEvent {
+  id          String   @id @default(cuid())
+  title       String
+  start       DateTime
+  end         DateTime?
+  allDay      Boolean  @default(false)
+  description String?
+  color       String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

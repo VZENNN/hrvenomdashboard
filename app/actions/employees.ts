@@ -22,6 +22,62 @@ const CreateEmployeeSchema = z.object({
     joinDate: z.string().optional(), // We'll parse to Date later
 });
 
+export async function getEmployees({
+    query = "",
+    page = 1,
+    limit = 10,
+    departmentId,
+    position,
+    status
+}: {
+    query?: string;
+    page?: number;
+    limit?: number;
+    departmentId?: string;
+    position?: string;
+    status?: EmployeeStatus;
+}) {
+    const skip = (page - 1) * limit;
+
+    const where: any = {
+        AND: [
+            {
+                OR: [
+                    { name: { contains: query, mode: 'insensitive' } },
+                    { employeeId: { contains: query, mode: 'insensitive' } }
+                ]
+            }
+        ]
+    };
+
+    if (departmentId) where.AND.push({ departmentId });
+    if (position) where.AND.push({ position });
+    if (status) where.AND.push({ status });
+
+    try {
+        const [data, total] = await Promise.all([
+            prisma.user.findMany({
+                where,
+                include: { department: true },
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take: limit
+            }),
+            prisma.user.count({ where })
+        ]);
+
+        return {
+            data,
+            total,
+            totalPages: Math.ceil(total / limit),
+            currentPage: page
+        };
+    } catch (error) {
+        console.error("Failed to fetch employees:", error);
+        return { data: [], total: 0, totalPages: 0, currentPage: 1 };
+    }
+}
+
 export async function createEmployee(formData: FormData) {
     // 1. Security Check (RBAC)
     const session = await auth();
