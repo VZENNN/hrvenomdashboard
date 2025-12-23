@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
-import { Plus, Search as SearchIcon, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Search as SearchIcon, MoreHorizontal, Pencil, Trash2, Eye } from 'lucide-react';
 import DeleteEmployeeButton from '@/components/employees/DeleteEmployeeButton';
 import EmployeeFilter from '@/components/employees/EmployeeFilter';
 
@@ -132,7 +132,17 @@ export default async function EmployeesPage({
                                     </td>
                                     <td className="p-4 text-right">
                                         <div className="flex justify-end gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
-                                            <Link href={`/dashboard/employees/${emp.id}/edit`} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-all duration-200">
+                                            <Link
+                                                href={`/dashboard/employees/${emp.id}`}
+                                                className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-all duration-200"
+                                                title="View Details"
+                                            >
+                                                <Eye size={16} />
+                                            </Link>
+                                            <Link
+                                                href={`/dashboard/employees/${emp.id}/edit`}
+                                                className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-all duration-200"
+                                            >
                                                 <Pencil size={16} />
                                             </Link>
                                             <DeleteEmployeeButton id={emp.id} />
