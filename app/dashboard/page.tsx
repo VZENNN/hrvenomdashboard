@@ -64,14 +64,21 @@ async function getDashboardData() {
   return { totalEmployees, maleCount, femaleCount, topScorers: topScorersEvaluation, chartData };
 }
 
+import { auth } from "@/auth";
+
+// ... (getDashboardData function remains same)
+
 export default async function DashboardPage() {
+  const session = await auth();
+  const userName = session?.user?.name || 'User';
+
   const { totalEmployees, maleCount, femaleCount, topScorers, chartData } = await getDashboardData();
 
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Dashboard Overview</h1>
-        <p className="text-slate-500 dark:text-slate-400 mt-2">Welcome back to VENOM HR System.</p>
+        <p className="text-slate-500 dark:text-slate-400 mt-2">Welcome back, <span className="font-semibold text-slate-900 dark:text-white">{userName}</span>! Here's what's happening today.</p>
       </div>
 
       {/* Stats Grid - UNCHANGED */}
@@ -118,8 +125,8 @@ export default async function DashboardPage() {
                   <div key={scorer.id} className={`flex items-center gap-4 pb-4 border-b border-slate-200 dark:border-slate-700 last:border-b-0 last:pb-0 animate-slide-in-up opacity-0 stagger-${index + 1}`} style={{ animationFillMode: 'forwards' }}>
                     <div className="flex-shrink-0">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg transition-transform duration-300 hover:scale-110 ${index === 0 ? 'bg-gradient-to-tr from-amber-400 to-amber-600' :
-                          index === 1 ? 'bg-gradient-to-tr from-slate-300 to-slate-400' :
-                            'bg-gradient-to-tr from-orange-400 to-orange-600'
+                        index === 1 ? 'bg-gradient-to-tr from-slate-300 to-slate-400' :
+                          'bg-gradient-to-tr from-orange-400 to-orange-600'
                         } shadow-lg ring-2 ${index === 0 ? 'ring-amber-100 dark:ring-amber-900' :
                           index === 1 ? 'ring-slate-100 dark:ring-slate-700' :
                             'ring-orange-100 dark:ring-orange-900'
@@ -132,8 +139,8 @@ export default async function DashboardPage() {
                       <p className="text-sm text-slate-500 dark:text-slate-400 truncate">{scorer.user.position}</p>
                     </div>
                     <div className={`font-bold text-lg whitespace-nowrap ${index === 0 ? 'text-amber-500' :
-                        index === 1 ? 'text-slate-400' :
-                          'text-orange-500'
+                      index === 1 ? 'text-slate-400' :
+                        'text-orange-500'
                       }`}>
                       {scorer.finalScore.toFixed(2)}
                     </div>
