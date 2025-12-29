@@ -11,6 +11,8 @@ import Search from '@/components/ui/Search';
 import { EmployeeStatus } from '@prisma/client';
 
 import { getEmployees } from '@/app/actions/employees';
+import AddEmployeeButton from '@/components/employees/AddEmployeeButton';
+import { auth } from "@/auth";
 
 export default async function EmployeesPage({
     searchParams
@@ -18,6 +20,7 @@ export default async function EmployeesPage({
     searchParams: Promise<{ q?: string; page?: string; departmentId?: string; position?: string; status?: string }>
 }) {
     const params = await searchParams;
+    const session = await auth();
     const query = params?.q || '';
     const currentPage = Number(params?.page) || 1;
     // const itemsPerPage = 10; // Handled by default in action
@@ -53,12 +56,7 @@ export default async function EmployeesPage({
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Employees</h1>
                     <p className="text-slate-500 text-sm">Manage your human capital.</p>
                 </div>
-                <Link
-                    href="/dashboard/employees/add"
-                    className="bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-4 py-2 rounded-lg flex items-center gap-2 font-medium hover:opacity-90 hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl"
-                >
-                    <Plus size={18} className="transition-transform group-hover:rotate-90" /> Add Employee
-                </Link>
+                <AddEmployeeButton userRole={session?.user?.role} />
             </div>
 
             {/* Search and Filter */}

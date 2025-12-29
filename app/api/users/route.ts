@@ -2,8 +2,16 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import bcrypt from "bcrypt";
 
+import { auth } from "@/auth";
+
 // 1. GET: Ambil semua data user
 export async function GET() {
+  const session = await auth();
+
+  if (!session || session.user?.role === "EMPLOYEE") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     const users = await prisma.user.findMany({
       orderBy: {
@@ -28,20 +36,26 @@ export async function GET() {
 
 // 2. POST: Tambah Karyawan Baru
 export async function POST(request: Request) {
+  const session = await auth();
+
+  if (!session || session.user?.role !== "ADMIN") {
+    return NextResponse.json({ error: "Forbidden. Only Admins can create users." }, { status: 403 });
+  }
+
   try {
     const body = await request.json();
-    
-    const { 
-      employeeId, 
-      email, 
-      password, 
-      name, 
-      gender, 
-      position, 
-      role, 
-      departmentId, 
+
+    const {
+      employeeId,
+      email,
+      password,
+      name,
+      gender,
+      position,
+      role,
+      departmentId,
       managerId,
-      joinDate 
+      joinDate
     } = body;
 
     if (!employeeId || !email || !password || !name || !gender || !position) {
@@ -71,11 +85,11 @@ export async function POST(request: Request) {
         email,
         password: hashedPassword,
         name,
-        gender,   
+        gender,
         position,
-        role: role || "EMPLOYEE", 
-        departmentId, 
-        managerId,    
+        role: role || "EMPLOYEE",
+        departmentId,
+        managerId,
         joinDate: joinDate ? new Date(joinDate) : undefined,
       },
     });
