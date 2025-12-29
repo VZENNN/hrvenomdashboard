@@ -13,6 +13,11 @@ export default async function DashboardLayout({
         redirect("/login");
     }
 
+    // Role-Based Access Control
+    if (session.user?.role === "EMPLOYEE") {
+        redirect("/unauthorized");
+    }
+
     return (
         <div className="flex h-screen bg-slate-50 dark:bg-slate-900">
             <Sidebar user={session?.user as any} />
