@@ -425,6 +425,15 @@ export default function CalendarComponent() {
                     center: "title",
                     right: "dayGridMonth,timeGridWeek,timeGridDay,listMonth",
                 }}
+                buttonText={{
+                    today: 'Today',
+                    month: 'Month',
+                    week: 'Week',
+                    day: 'Day',
+                    list: 'List',
+                    prev: '<',
+                    next: '>'
+                }}
                 height="100%"
                 editable={true}
                 selectable={true}
