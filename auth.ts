@@ -3,6 +3,7 @@ import Credentials from "next-auth/providers/credentials"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcrypt"
 import { z } from "zod"
+import { authConfig } from "./auth.config"
 
 const CredentialsSchema = z.object({
   email: z.string().email("Invalid email"),
@@ -10,11 +11,9 @@ const CredentialsSchema = z.object({
 });
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  ...authConfig,
   session: {
     strategy: "jwt",
-  },
-  pages: {
-    signIn: "/login",
   },
   providers: [
     Credentials({
@@ -55,20 +54,4 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
     }),
   ],
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-        token.role = (user as any).role; // Type assertion needed until module augmentation
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      if (session.user) {
-        (session.user as any).id = token.id;
-        (session.user as any).role = token.role;
-      }
-      return session;
-    },
-  },
 })
