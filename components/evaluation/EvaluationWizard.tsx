@@ -79,7 +79,7 @@ export default function EvaluationWizard({ users, currentUserId }: Props) {
             // Initialize Scores
             const initialScores: any = {};
             data.behavioral.forEach(k => {
-                initialScores[k.id] = { target: '-', actual: '-', score: 3, weight: 0, comment: '' };
+                initialScores[k.id] = { target: '-', actual: '-', score: 0, weight: 0, comment: '' };
             });
             // Calculate weights: Use defaultWeight if any (sum > 0), otherwise distribute equally
             const hasCustomWeights = data.technical.some((k: KpiCriteria) => k.defaultWeight && k.defaultWeight > 0);
