@@ -14,9 +14,10 @@ export default async function DashboardLayout({
     }
 
     // Role-Based Access Control
-    if (session.user?.role === "EMPLOYEE") {
-        redirect("/unauthorized");
-    }
+    // Role-Based Access Control - Removed to allow partial access (Calendar & My Eval)
+    // if (session.user?.role === "EMPLOYEE") {
+    //     redirect("/unauthorized");
+    // }
 
     return (
         <div className="flex h-screen bg-slate-50 dark:bg-slate-900">

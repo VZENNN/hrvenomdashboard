@@ -1,6 +1,10 @@
 import CalendarComponent from "@/components/calendar/CalendarComponent";
+import { auth } from "@/auth";
 
-export default function CalendarPage() {
+export default async function CalendarPage() {
+    const session = await auth();
+    const userRole = session?.user?.role;
+
     return (
         <div className="h-[88vh] flex flex-col gap-4">
             <div className="flex items-center justify-between mb-2">
@@ -11,7 +15,7 @@ export default function CalendarPage() {
             </div>
 
             <div className="flex-1 min-h-0 bg-slate-950 rounded-xl overflow-hidden shadow-sm border border-slate-800">
-                <CalendarComponent />
+                <CalendarComponent role={userRole} />
             </div>
         </div>
     );

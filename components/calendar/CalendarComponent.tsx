@@ -23,9 +23,69 @@ interface Event {
 
 const DEFAULT_EVENTS: Event[] = [];
 
-export default function CalendarComponent() {
+
+interface CalendarProps {
+    role?: string;
+}
+
+export default function CalendarComponent({ role }: CalendarProps) {
     const [events, setEvents] = useState<Event[]>(DEFAULT_EVENTS);
     const [isLoaded, setIsLoaded] = useState(false);
+
+    const isReadOnly = role === 'EMPLOYEE';
+
+    // State Declarations
+    const [selectedEvent, setSelectedEvent] = useState<any>(null);
+    const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [newEvent, setNewEvent] = useState({
+        id: '',
+        title: '',
+        start: '',
+        end: '',
+        description: '',
+        category: 'meeting'
+    });
+
+    // Category Colors Configuration
+    const CATEGORY_COLORS: Record<string, string> = {
+        meeting: "#9333ea", // Purple
+        holiday: "#ef4444", // Red
+        training: "#3b82f6", // Blue
+        project: "#10b981", // Emerald
+        other: "#64748b"    // Slate
+    };
+
+    const handleDateSelect = (selectInfo: any) => {
+        if (isReadOnly) return;
+        setIsEditing(false);
+
+        let uiEnd = '';
+        if (selectInfo.endStr) {
+            const endDate = new Date(selectInfo.endStr);
+            endDate.setDate(endDate.getDate() - 1);
+            uiEnd = endDate.toISOString().split("T")[0];
+        }
+
+        setNewEvent({
+            id: '',
+            title: '',
+            start: selectInfo.startStr,
+            end: uiEnd !== selectInfo.startStr ? uiEnd : '',
+            description: '',
+            category: 'meeting'
+        });
+        setIsAddModalOpen(true);
+    };
+
+    const handleEventClick = (info: any) => {
+        setSelectedEvent(info.event);
+        setIsViewModalOpen(true);
+    };
+
+    // ...
+
 
     const handleDatesSet = (dateInfo: any) => {
         const fetchEvents = async () => {
@@ -55,53 +115,7 @@ export default function CalendarComponent() {
 
     // Save to LocalStorage removed. Using Server Actions directly.
 
-    // Category Colors Configuration
-    const CATEGORY_COLORS: Record<string, string> = {
-        meeting: "#9333ea", // Purple
-        holiday: "#ef4444", // Red
-        training: "#3b82f6", // Blue
-        project: "#10b981", // Emerald
-        other: "#64748b"    // Slate
-    };
 
-    const [selectedEvent, setSelectedEvent] = useState<any>(null);
-    const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-    const [isEditing, setIsEditing] = useState(false);
-    const [newEvent, setNewEvent] = useState({
-        id: '',
-        title: '',
-        start: '',
-        end: '',
-        description: '',
-        category: 'meeting'
-    });
-
-    const handleEventClick = (info: any) => {
-        setSelectedEvent(info.event);
-        setIsViewModalOpen(true);
-    };
-
-    const handleDateSelect = (selectInfo: any) => {
-        setIsEditing(false);
-
-        let uiEnd = '';
-        if (selectInfo.endStr) {
-            const endDate = new Date(selectInfo.endStr);
-            endDate.setDate(endDate.getDate() - 1);
-            uiEnd = endDate.toISOString().split("T")[0];
-        }
-
-        setNewEvent({
-            id: '',
-            title: '',
-            start: selectInfo.startStr,
-            end: uiEnd !== selectInfo.startStr ? uiEnd : '',
-            description: '',
-            category: 'meeting'
-        });
-        setIsAddModalOpen(true);
-    };
 
     const handleAddOrUpdateEvent = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -435,8 +449,8 @@ export default function CalendarComponent() {
                     next: '>'
                 }}
                 height="100%"
-                editable={true}
-                selectable={true}
+                editable={!isReadOnly}
+                selectable={!isReadOnly}
                 selectMirror={true}
                 dayMaxEvents={false}
                 weekends={true}
@@ -483,20 +497,23 @@ export default function CalendarComponent() {
                                 </div>
                             </div>
 
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={handleDeleteEvent}
-                                    className="flex-1 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 rounded-lg text-sm font-medium transition-colors"
-                                >
-                                    Hapus
-                                </button>
-                                <button
-                                    onClick={handleEditClick}
-                                    className="flex-1 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm font-medium transition-colors"
-                                >
-                                    Edit
-                                </button>
-                            </div>
+
+                            {!isReadOnly && (
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={handleDeleteEvent}
+                                        className="flex-1 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 rounded-lg text-sm font-medium transition-colors"
+                                    >
+                                        Hapus
+                                    </button>
+                                    <button
+                                        onClick={handleEditClick}
+                                        className="flex-1 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm font-medium transition-colors"
+                                    >
+                                        Edit
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
