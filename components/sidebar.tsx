@@ -35,15 +35,29 @@ interface SidebarProps {
     email?: string | null;
     image?: string | null;
     role?: string;
+    id?: string;
   }
 }
 
 export default function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
 
+  // Filter menu based on role
+  const isEmployee = user?.role === 'EMPLOYEE';
+
+  let displayedMenu = menu;
+
+  if (isEmployee) {
+    displayedMenu = [
+      { name: "Kalender", path: "/dashboard/calendar", icon: CalendarDays },
+      { name: "My Evaluation", path: `/dashboard/employees/${user?.id}`, icon: NotebookPen },
+    ];
+  }
+
   return (
     <aside className="w-64 bg-slate-950 text-white h-screen flex flex-col p-4 border-r border-slate-800 shadow-xl fixed left-0 top-0">
       <div className="mb-10 px-2 mt-4 flex items-center gap-3">
+        {/* ... Logo ... */}
         <Image
           src="/venom-logo.png"
           alt="Venom HR Logo"
@@ -55,8 +69,8 @@ export default function Sidebar({ user }: SidebarProps) {
       </div>
 
       <nav className="flex flex-col gap-2 flex-1">
-        {menu.map((item, index) => {
-          // Logic: Dashboard must be exact match. Others can be sub-paths (e.g. /dashboard/employees/add)
+        {displayedMenu.map((item, index) => {
+          // Logic: Dashboard must be exact match. Others can be sub-paths
           const isActive = item.path === '/dashboard'
             ? pathname === item.path
             : pathname.startsWith(item.path);
