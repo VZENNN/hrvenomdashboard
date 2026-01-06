@@ -190,9 +190,10 @@ export default function EvaluationWizard({ users, currentUserId }: Props) {
                                         <div className='flex-1'>
                                             <select
                                                 className="w-full p-2 border rounded"
-                                                value={scores[kpi.id]?.score}
+                                                value={scores[kpi.id]?.score || 0}
                                                 onChange={(e) => updateScore(kpi.id, 'score', Number(e.target.value))}
                                             >
+                                                <option value={0} disabled>-- Pilih Nilai --</option>
                                                 <option value={1}>1 - Buruk</option>
                                                 <option value={2}>2 - Kurang</option>
                                                 <option value={3}>3 - Cukup</option>
