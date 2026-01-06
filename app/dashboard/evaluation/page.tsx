@@ -1,6 +1,8 @@
 
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
+import { auth } from '@/auth';
+import DeleteEvaluationButton from '@/components/evaluation/DeleteEvaluationButton';
 import { Plus, Search as SearchIcon, Eye } from 'lucide-react';
 
 import Pagination from '@/components/ui/Pagination';
@@ -13,6 +15,7 @@ export default async function EvaluationListPage({ searchParams }: {
         month?: string;
     }>;
 }) {
+    const session = await auth();
     const params = await searchParams;
     const currentPage = Number(params?.page) || 1;
     const itemsPerPage = 10;
@@ -108,12 +111,18 @@ export default async function EvaluationListPage({ searchParams }: {
                                             {ev.appraiser.name}
                                         </td>
                                         <td className="p-4 text-right">
-                                            <Link
-                                                href={`/dashboard/evaluation/${ev.id}`}
-                                                className="p-2 text-slate-400 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg transition-all duration-200 inline-block"
-                                            >
-                                                <Eye size={18} />
-                                            </Link>
+                                            <div className="flex justify-end gap-2 items-center">
+                                                <Link
+                                                    href={`/dashboard/evaluation/${ev.id}`}
+                                                    className="p-2 text-slate-400 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg transition-all duration-200"
+                                                    title="View Details"
+                                                >
+                                                    <Eye size={18} />
+                                                </Link>
+                                                {(session?.user?.role === 'ADMIN' || session?.user?.role === 'MANAGER') && (
+                                                    <DeleteEvaluationButton id={ev.id} />
+                                                )}
+                                            </div>
                                         </td>
                                     </tr>
                                 );

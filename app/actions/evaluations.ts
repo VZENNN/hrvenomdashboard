@@ -5,6 +5,7 @@ import { KpiType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { auth } from "@/auth";
 
 export async function getEvaluationMetadata(userId: string) {
     const user = await prisma.user.findUnique({
@@ -134,4 +135,25 @@ export async function createEvaluation(data: CreateEvaluationInput) {
 
     revalidatePath("/dashboard/evaluation");
     redirect("/dashboard/evaluation");
+}
+
+export async function deleteEvaluation(id: string) {
+    const session = await auth();
+
+    // RBAC: Only ADMIN or MANAGER can delete
+    if (!session?.user?.role || !['ADMIN', 'MANAGER'].includes(session.user.role)) {
+        return { error: "Unauthorized. Only Admins or Managers can delete evaluations." };
+    }
+
+    try {
+        await prisma.evaluation.delete({
+            where: { id }
+        });
+    } catch (error) {
+        console.error("Delete Error:", error);
+        return { error: "Failed to delete evaluation." };
+    }
+
+    revalidatePath("/dashboard/evaluation");
+    return { success: true };
 }
