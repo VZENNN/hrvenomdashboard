@@ -81,9 +81,13 @@ export default function EvaluationWizard({ users, currentUserId }: Props) {
             data.behavioral.forEach(k => {
                 initialScores[k.id] = { target: '-', actual: '-', score: 3, weight: 0, comment: '' };
             });
-            const defaultWeight = data.technical.length > 0 ? (100 / data.technical.length) : 0;
+            // Calculate weights: Use defaultWeight if any (sum > 0), otherwise distribute equally
+            const hasCustomWeights = data.technical.some((k: KpiCriteria) => k.defaultWeight && k.defaultWeight > 0);
+            const equalWeight = data.technical.length > 0 ? (100 / data.technical.length) : 0;
+
             data.technical.forEach(k => {
-                initialScores[k.id] = { target: '100%', actual: '', score: 0, weight: defaultWeight, comment: '' };
+                const weight = hasCustomWeights ? (k.defaultWeight || 0) : equalWeight;
+                initialScores[k.id] = { target: '100%', actual: '', score: 0, weight: weight, comment: '' };
             });
 
             setScores(initialScores);
