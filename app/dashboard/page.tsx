@@ -2,8 +2,10 @@ import { prisma } from "@/lib/prisma";
 import { User, Gender } from "@prisma/client";
 import { Trophy, Users, UserCheck, Mars, Venus } from "lucide-react";
 import OverviewChart from "@/components/dashboard/OverviewChart";
+import { auth } from "@/auth";
+import DashboardFilter from "@/components/dashboard/DashboardFilter";
 
-async function getDashboardData() {
+async function getDashboardData(month: number, year: number) {
   const totalEmployees = await prisma.user.count({ where: { status: "ACTIVE" } });
 
   const maleCount = await prisma.user.count({
@@ -14,12 +16,11 @@ async function getDashboardData() {
     where: { status: "ACTIVE", gender: "FEMALE" }
   });
 
-  // Top 3 Scorers Logic (Current Month)
-  const currentDate = new Date();
+  // Top 3 Scorers Logic (Filtered by Month/Year)
   const topScorersEvaluation = await prisma.evaluation.findMany({
     where: {
-      month: currentDate.getMonth() + 1, // JS Month is 0-indexed
-      year: currentDate.getFullYear()
+      month: month,
+      year: year
     },
     orderBy: {
       finalScore: 'desc'
@@ -64,15 +65,24 @@ async function getDashboardData() {
   return { totalEmployees, maleCount, femaleCount, topScorers: topScorersEvaluation, chartData };
 }
 
-import { auth } from "@/auth";
-
-// ... (getDashboardData function remains same)
-
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }: {
+  searchParams: Promise<{
+    month?: string;
+    year?: string;
+  }>;
+}) {
   const session = await auth();
   const userName = session?.user?.name || 'User';
+  const params = await searchParams;
 
-  const { totalEmployees, maleCount, femaleCount, topScorers, chartData } = await getDashboardData();
+  const month = params?.month ? Number(params.month) : new Date().getMonth() + 1;
+  const year = params?.year ? Number(params.year) : new Date().getFullYear();
+
+  const { totalEmployees, maleCount, femaleCount, topScorers, chartData } = await getDashboardData(month, year);
+
+  // Format period for display
+  const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+  const monthName = months[month - 1];
 
   return (
     <div className="space-y-8">
@@ -115,8 +125,17 @@ export default async function DashboardPage() {
           </div>
 
           <div className="relative z-10">
-            <div className="flex items-center gap-2 mb-6 text-amber-500 font-bold uppercase tracking-wider text-sm">
-              <Trophy size={50} /> Employees Of The Month
+            <div className="flex justify-between items-start mb-6">
+              <div className="flex items-center gap-2 text-amber-500 font-bold uppercase tracking-wider text-sm">
+                <Trophy size={50} />
+                <div>
+                  Employees Of The Month
+                  <div className="text-xs text-slate-400 font-normal normal-case">{monthName} {year}</div>
+                </div>
+              </div>
+              <div className="relative z-20">
+                <DashboardFilter />
+              </div>
             </div>
 
             {topScorers && topScorers.length > 0 ? (
@@ -159,7 +178,7 @@ export default async function DashboardPage() {
               </div>
             ) : (
               <div className="text-slate-500 italic py-8">
-                No evaluations found for this month yet.
+                No evaluations found for {monthName} {year}.
               </div>
             )}
           </div>
