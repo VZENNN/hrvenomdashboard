@@ -246,9 +246,9 @@ function OrgChartContent() {
         }
 
         const nodesBounds = getNodesBounds(getNodes());
-        const viewport = getViewport();
-        const imageWidth = nodesBounds.width;
-        const imageHeight = nodesBounds.height;
+        const imagePadding = 50;
+        const imageWidth = nodesBounds.width + (imagePadding * 2);
+        const imageHeight = nodesBounds.height + (imagePadding * 2);
 
         toPng(viewportElement, {
             backgroundColor: '#ffffff',
@@ -257,7 +257,7 @@ function OrgChartContent() {
             style: {
                 width: imageWidth.toString(),
                 height: imageHeight.toString(),
-                transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`,
+                transform: `translate(${-nodesBounds.x + imagePadding}px, ${-nodesBounds.y + imagePadding}px) scale(1)`,
             },
         }).then(downloadImage);
     };
