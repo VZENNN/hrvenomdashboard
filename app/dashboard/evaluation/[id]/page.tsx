@@ -130,6 +130,11 @@ export default async function EvaluationDetailPage({ params }: { params: Promise
                                 <td className="p-3">
                                     <p className="font-medium text-slate-900 dark:text-white">{item.criteria.title}</p>
                                     <p className="text-xs text-slate-400">{item.criteria.category}</p>
+                                    {item.comment && (
+                                        <p className="text-xs text-slate-500 italic mt-1 bg-slate-50 dark:bg-slate-900 p-2 rounded">
+                                            "{item.comment}"
+                                        </p>
+                                    )}
                                 </td>
                                 <td className="p-3 text-center">
                                     <span className="inline-block w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-bold leading-10">
@@ -165,6 +170,11 @@ export default async function EvaluationDetailPage({ params }: { params: Promise
                                 <td className="p-3">
                                     <p className="font-medium text-slate-900 dark:text-white">{item.criteria.title}</p>
                                     <p className="text-xs text-slate-400">{item.criteria.category}</p>
+                                    {item.comment && (
+                                        <p className="text-xs text-slate-500 italic mt-1 bg-slate-50 dark:bg-slate-900 p-2 rounded">
+                                            "{item.comment}"
+                                        </p>
+                                    )}
                                 </td>
                                 <td className="p-3 text-center text-sm">{item.target || '-'}</td>
                                 <td className="p-3 text-center text-sm font-medium">{item.actual || '-'}</td>
