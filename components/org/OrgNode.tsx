@@ -88,6 +88,34 @@ const OrgNode = ({ data, id, selected }: NodeProps<Node<OrgNodeData>>) => {
                 position={Position.Bottom}
                 className="!w-4 !h-4 !bg-slate-300 dark:!bg-slate-600 !border-4 !border-white dark:!border-slate-900 !bottom-[-8px] transition hover:scale-125 hover:!bg-purple-500 hover:!border-purple-200"
             />
+
+            {/* LEFT HANDLES */}
+            <Handle
+                type="target"
+                position={Position.Left}
+                id="left-target"
+                className="!w-4 !h-4 !bg-slate-300 dark:!bg-slate-600 !border-4 !border-white dark:!border-slate-900 !top-[35%] !left-[-8px] transition hover:scale-125 hover:!bg-purple-500 hover:!border-purple-200"
+            />
+            <Handle
+                type="source"
+                position={Position.Left}
+                id="left-source"
+                className="!w-4 !h-4 !bg-slate-300 dark:!bg-slate-600 !border-4 !border-white dark:!border-slate-900 !top-[65%] !left-[-8px] transition hover:scale-125 hover:!bg-purple-500 hover:!border-purple-200"
+            />
+
+            {/* RIGHT HANDLES */}
+            <Handle
+                type="target"
+                position={Position.Right}
+                id="right-target"
+                className="!w-4 !h-4 !bg-slate-300 dark:!bg-slate-600 !border-4 !border-white dark:!border-slate-900 !top-[35%] !right-[-8px] transition hover:scale-125 hover:!bg-purple-500 hover:!border-purple-200"
+            />
+            <Handle
+                type="source"
+                position={Position.Right}
+                id="right-source"
+                className="!w-4 !h-4 !bg-slate-300 dark:!bg-slate-600 !border-4 !border-white dark:!border-slate-900 !top-[65%] !right-[-8px] transition hover:scale-125 hover:!bg-purple-500 hover:!border-purple-200"
+            />
         </div>
     );
 };
