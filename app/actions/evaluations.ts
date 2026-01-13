@@ -157,3 +157,88 @@ export async function deleteEvaluation(id: string) {
     revalidatePath("/dashboard/evaluation");
     return { success: true };
 }
+
+// Update Schema - nearly identical to creation but ID specific
+const UpdateEvaluationSchema = z.object({
+    id: z.string().min(1, "Evaluation ID is required"),
+    items: z.array(EvaluationItemSchema),
+    feedback: z.string().optional().nullable()
+});
+
+type UpdateEvaluationInput = z.input<typeof UpdateEvaluationSchema>;
+
+export async function updateEvaluation(data: UpdateEvaluationInput) {
+    const session = await auth();
+
+    // STRICT RBAC: Only ADMIN can edit
+    if (session?.user?.role !== 'ADMIN') {
+        return { error: "Unauthorized. Only Admins can edit evaluations." };
+    }
+
+    // 1. Validate Input
+    const result = UpdateEvaluationSchema.safeParse(data);
+
+    if (!result.success) {
+        console.error("Validation Error:", result.error);
+        return { error: "Invalid evaluation update data." };
+    }
+
+    const { id, items, feedback } = result.data;
+
+    // Calculate Scores Server Side for security
+    let totalBehaviorScore = 0;
+    let totalTechnicalScoreWeighted = 0;
+
+    const behaviorItems = items.filter(i => i.type === 'BEHAVIORAL');
+    const technicalItems = items.filter(i => i.type === 'TECHNICAL');
+
+    // Behavior: Simple Average
+    if (behaviorItems.length > 0) {
+        const sum = behaviorItems.reduce((acc, item) => acc + item.score, 0);
+        totalBehaviorScore = sum / behaviorItems.length;
+    }
+
+    // Technical: Weighted Sum (Score * Weight%)
+    if (technicalItems.length > 0) {
+        technicalItems.forEach(item => {
+            totalTechnicalScoreWeighted += (item.weight / 100) * item.score;
+        });
+    }
+
+    // Final Score: (Behavior * 40%) + (Technical * 60%)
+    const finalScore = (totalBehaviorScore * 0.4) + (totalTechnicalScoreWeighted * 0.6);
+
+    try {
+        await prisma.evaluation.update({
+            where: { id },
+            data: {
+                behaviorScore: totalBehaviorScore,
+                technicalScore: totalTechnicalScoreWeighted,
+                finalScore: finalScore,
+                feedback,
+                // Transactional update of items: delete old, create new? Or update?
+                // Easiest for consistency is delete all items and recreate them, 
+                // BUT that changes IDs. Better to update if possible, or upsert.
+                // Given the structure, recreating is safer to ensure no stale data remains (e.g. removed KPIs).
+                items: {
+                    deleteMany: {},
+                    create: items.map(item => ({
+                        criteriaId: item.criteriaId,
+                        target: item.target,
+                        actual: item.actual,
+                        weight: item.weight,
+                        score: item.score,
+                        comment: item.comment
+                    }))
+                }
+            }
+        });
+    } catch (e) {
+        console.error("Database Error:", e);
+        return { error: "Failed to update evaluation." };
+    }
+
+    revalidatePath(`/dashboard/evaluation`);
+    revalidatePath(`/dashboard/evaluation/${id}`);
+    redirect(`/dashboard/evaluation/${id}`);
+}
