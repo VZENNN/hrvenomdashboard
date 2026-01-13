@@ -139,6 +139,7 @@ export default function CalendarComponent({ role }: CalendarProps) {
                     title: newEvent.title,
                     start: newEvent.start,
                     end: dbEnd || undefined,
+                    allDay: true,
                     color: color,
                     extendedProps: { description: newEvent.description }
                 };
@@ -462,6 +463,7 @@ export default function CalendarComponent({ role }: CalendarProps) {
                 datesSet={handleDatesSet}
                 eventBackgroundColor="#9333ea"
                 eventBorderColor="#9333ea"
+                displayEventTime={false}
             />
 
             {/* View Event Modal */}
