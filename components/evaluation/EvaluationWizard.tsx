@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { User, Department, KpiCriteria, KpiType } from '@prisma/client';
-import { getEvaluationMetadata, createEvaluation, checkExistingEvaluation } from '@/app/actions/evaluations';
+import { getEvaluationMetadata, createEvaluation, checkExistingEvaluation, updateEvaluation } from '@/app/actions/evaluations';
 import { useEvaluationScoring } from '@/hooks/useEvaluation';
 import { Loader2, Save, Calculator, Trophy } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -15,25 +15,47 @@ interface UserWithDept extends User {
 interface Props {
     users: User[];
     currentUserId: string;
+    mode?: 'create' | 'edit';
+    initialData?: any; // Ideally typed better, but for now specific to what we pass from page
 }
 
-export default function EvaluationWizard({ users, currentUserId }: Props) {
-    const [step, setStep] = useState(1);
+export default function EvaluationWizard({ users, currentUserId, mode = 'create', initialData }: Props) {
+    const [step, setStep] = useState(mode === 'edit' ? 2 : 1);
     const [loading, setLoading] = useState(false);
 
     // Selection State
-    const [selectedUserId, setSelectedUserId] = useState('');
-    const [month, setMonth] = useState(new Date().getMonth() + 1);
-    const [year, setYear] = useState(new Date().getFullYear());
+    const [selectedUserId, setSelectedUserId] = useState(initialData?.userId || '');
+    const [month, setMonth] = useState(initialData?.month || new Date().getMonth() + 1);
+    const [year, setYear] = useState(initialData?.year || new Date().getFullYear());
 
     // Data State
-    const [targetUser, setTargetUser] = useState<UserWithDept | null>(null);
-    const [behavioralKpis, setBehavioralKpis] = useState<KpiCriteria[]>([]);
-    const [technicalKpis, setTechnicalKpis] = useState<KpiCriteria[]>([]);
+    const [targetUser, setTargetUser] = useState<UserWithDept | null>(initialData?.user || null);
+    const [behavioralKpis, setBehavioralKpis] = useState<KpiCriteria[]>(initialData?.behavioral || []);
+    const [technicalKpis, setTechnicalKpis] = useState<KpiCriteria[]>(initialData?.technical || []);
 
     // Derived State (Hook)
     const { scores, setScores, updateScore, results: finalResult } = useEvaluationScoring(behavioralKpis, technicalKpis);
-    const [feedback, setFeedback] = useState('');
+    const [feedback, setFeedback] = useState(initialData?.feedback || '');
+
+    // Initialize scores if in edit mode and initialScores not yet set (though hook usually starts empty)
+    useEffect(() => {
+        if (mode === 'edit' && initialData && Object.keys(scores).length === 0) {
+            const initialScores: any = {};
+
+            // Map existing items to scores format
+            initialData.items.forEach((item: any) => {
+                initialScores[item.criteriaId] = {
+                    target: item.target,
+                    actual: item.actual,
+                    score: item.score,
+                    weight: item.weight,
+                    comment: item.comment || ''
+                };
+            });
+            setScores(initialScores);
+        }
+    }, [mode, initialData, scores, setScores]);
+
 
     // Check for existing evaluation on selection change
     useEffect(() => {
@@ -106,16 +128,24 @@ export default function EvaluationWizard({ users, currentUserId }: Props) {
             ...technicalKpis.map(k => ({ ...scores[k.id], criteriaId: k.id, type: 'TECHNICAL' as const }))
         ];
 
-        const payload = {
-            userId: selectedUserId,
-            appraiserId: currentUserId,
-            month,
-            year,
-            items,
-            feedback
-        };
+        if (mode === 'edit') {
+            await updateEvaluation({
+                id: initialData.id,
+                items,
+                feedback
+            });
+        } else {
+            const payload = {
+                userId: selectedUserId,
+                appraiserId: currentUserId,
+                month,
+                year,
+                items,
+                feedback
+            };
 
-        await createEvaluation(payload);
+            await createEvaluation(payload);
+        }
     };
 
     if (step === 1) {
@@ -233,7 +263,7 @@ export default function EvaluationWizard({ users, currentUserId }: Props) {
                                         </div>
                                         <div className="col-span-2">
                                             <input
-                                                value={scores[kpi.id]?.target}
+                                                value={scores[kpi.id]?.target || ''}
                                                 onChange={(e) => updateScore(kpi.id, 'target', e.target.value)}
                                                 className="w-full p-1 border rounded text-sm"
                                             />
@@ -242,7 +272,7 @@ export default function EvaluationWizard({ users, currentUserId }: Props) {
                                             <input
                                                 type="number"
                                                 placeholder="%"
-                                                value={scores[kpi.id]?.actual}
+                                                value={scores[kpi.id]?.actual || ''}
                                                 onChange={(e) => updateScore(kpi.id, 'actual', e.target.value)}
                                                 className="w-full p-1 border rounded text-sm bg-blue-50 focus:bg-white transition"
                                             />
@@ -250,7 +280,7 @@ export default function EvaluationWizard({ users, currentUserId }: Props) {
                                         <div className="col-span-2">
                                             <input
                                                 type="number"
-                                                value={scores[kpi.id]?.weight}
+                                                value={scores[kpi.id]?.weight || 0}
                                                 onChange={(e) => updateScore(kpi.id, 'weight', Number(e.target.value))}
                                                 className="w-full p-1 border rounded text-sm"
                                             />

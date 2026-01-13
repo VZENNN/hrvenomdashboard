@@ -1,10 +1,12 @@
 import { getEvaluationById } from "@/app/actions/evaluationDetail";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Calendar, User, Building2, Award, Target } from "lucide-react";
+import { auth } from "@/auth";
+import { ArrowLeft, Calendar, User, Building2, Award, Target, Edit } from "lucide-react";
 import PrintButton from "@/components/ui/PrintButton";
 
 export default async function EvaluationDetailPage({ params }: { params: Promise<{ id: string }> }) {
+    const session = await auth();
     const { id } = await params;
     const evaluation = await getEvaluationById(id);
 
@@ -38,6 +40,14 @@ export default async function EvaluationDetailPage({ params }: { params: Promise
                     </div>
                 </div>
                 <div className="flex gap-2">
+                    {session?.user?.role === 'ADMIN' && (
+                        <Link
+                            href={`/dashboard/evaluation/${evaluation.id}/edit`}
+                            className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-800 transition-colors"
+                        >
+                            <Edit size={16} /> Edit
+                        </Link>
+                    )}
                     <PrintButton />
                 </div>
             </div>
