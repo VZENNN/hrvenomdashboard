@@ -18,7 +18,10 @@ export async function getEvaluationMetadata(userId: string) {
     // 1. Behavioral KPIs (Fixed / Global)
     const behavioral = await prisma.kpiCriteria.findMany({
         where: { type: KpiType.BEHAVIORAL },
-        orderBy: { title: 'asc' }
+        orderBy: [
+            { category: 'asc' },
+            { title: 'asc' }
+        ]
     });
 
     // 2. Technical KPIs (Dynamic based on Dept & Position)
