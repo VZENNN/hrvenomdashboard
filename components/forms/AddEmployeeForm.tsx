@@ -90,6 +90,7 @@ export default function AddEmployeeForm({ departments, managers }: Props) {
                     <option value="EMPLOYEE">Employee</option>
                     <option value="MANAGER">Manager</option>
                     <option value="ADMIN">Admin</option>
+                    <option value="APPLICANT">Applicant</option>
                 </select>
             </div>
 
