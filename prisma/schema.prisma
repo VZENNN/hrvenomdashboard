@@ -40,6 +40,8 @@ model User {
 
   evaluations Evaluation[] // Nilai yang dia terima
   appraisals  Evaluation[] @relation("Appraiser") // Nilai yang dia buat (sebagai atasan)
+  
+  psychotestResults PsychotestResult[]
 
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
@@ -136,10 +138,14 @@ model EvaluationItem {
 // 4. ENUMS
 // ==============================
 
+
+// ... existing code ...
+
 enum Role {
   ADMIN
   MANAGER
   EMPLOYEE
+  APPLICANT
 }
 
 enum Gender {
@@ -182,4 +188,60 @@ model VenomCalendarEvent {
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+// ... existing code ...
+
+// ==============================
+// 6. PSIKOTES MODULE
+// ==============================
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  ESSAY
+  MOST_AND_LEAST
+}
+
+model PsychotestCategory {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  timeLimit   Int      // in seconds
+  order       Int      @default(0) // Sequence order
+  
+  questions   PsychotestQuestion[]
+  results     PsychotestResult[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model PsychotestQuestion {
+  id          String      @id @default(cuid())
+  content     String      @db.Text
+  image       String?     // URL to image
+  type        QuestionType @default(ESSAY)
+  options     Json?       // For MC: [{ label: "A", text: "..." }]
+  
+  categoryId  String
+  category    PsychotestCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model PsychotestResult {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  categoryId  String
+  category    PsychotestCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  
+  answers     Json     // { questionId: answer_value }
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, categoryId])
 }

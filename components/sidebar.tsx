@@ -14,7 +14,8 @@ import {
   Building2,
   Calendar,
   CalendarDays,
-  NotebookPen
+  NotebookPen,
+  BrainCircuit
 } from "lucide-react";
 
 const menu = [
@@ -23,6 +24,7 @@ const menu = [
   { name: "Departemen", path: "/dashboard/departments", icon: Building2 },
   { name: "Kelola KPI", path: "/dashboard/kpi", icon: Target },
   { name: "Penilaian", path: "/dashboard/evaluation", icon: NotebookPen },
+  { name: "Psikotes", path: "/dashboard/psychotest", icon: BrainCircuit },
   { name: "Struktur Organisasi", path: "/dashboard/organization", icon: Network },
   { name: "Kalender", path: "/dashboard/calendar", icon: CalendarDays },
 ];
