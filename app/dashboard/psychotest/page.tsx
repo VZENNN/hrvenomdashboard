@@ -1,6 +1,5 @@
 import { getPsychotestCategories } from "@/app/actions/psychotest";
 import Link from "next/link";
-import { Button } from "@/components/ui/button"; // Assuming standard UI components exist or using generic html for now
 import { Plus, List, Settings, FileText } from "lucide-react";
 
 export default async function PsychotestDashboardPage() {
