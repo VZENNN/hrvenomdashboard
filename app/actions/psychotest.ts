@@ -51,7 +51,9 @@ export async function getPsychotestCategoryById(id: string) {
     return await prisma.psychotestCategory.findUnique({
         where: { id },
         include: {
-            questions: true // We need questions for the test
+            questions: {
+                orderBy: { createdAt: 'asc' }
+            }
         }
     });
 }
@@ -171,7 +173,9 @@ export async function getPsychotestResultById(id: string) {
             user: true,
             category: {
                 include: {
-                    questions: true
+                    questions: {
+                        orderBy: { createdAt: 'asc' }
+                    }
                 }
             }
         }
