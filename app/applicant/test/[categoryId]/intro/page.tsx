@@ -26,7 +26,7 @@ export default async function TestIntroPage({ params }: { params: Promise<{ cate
             )}
 
             <div className="bg-slate-50 dark:bg-slate-900 p-6 rounded-lg border w-full mb-8">
-                <div className="text-slate-500 mb-1 uppercase text-xs font-bold tracking-wider">Time Limit</div>
+                <div className="text-slate-500 mb-1 uppercase text-xs font-bold tracking-wider">Batas Waktu</div>
                 <div className="text-4xl font-mono font-bold text-red-600 flex items-center justify-center gap-2">
                     <Clock size={32} />
                     {Math.floor(category.timeLimit / 60)}m {category.timeLimit % 60}s
@@ -35,18 +35,18 @@ export default async function TestIntroPage({ params }: { params: Promise<{ cate
 
             <div className="space-y-4 w-full">
                 <div className="bg-yellow-50 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 p-4 rounded text-sm text-left">
-                    <p className="font-bold">Instructions:</p>
+                    <p className="font-bold">Petunjuk:</p>
                     <ul className="list-disc list-inside space-y-1 mt-2">
-                        <li>The timer starts immediately when you click Start.</li>
-                        <li>You cannot pause the test once started.</li>
-                        <li>Answer as many questions as you can before time runs out.</li>
-                        <li>The system will auto-submit when time expires.</li>
+                        <li>Waktu akan segera dimulai ketika anda menekan tombol mulai.</li>
+                        <li>Anda tidak dapat menjeda tes setelah dimulai.</li>
+                        <li>Jawab sebanyak mungkin pertanyaan sebelum waktu habis.</li>
+                        <li>Sistem akan submit secara otomatis ketika waktu habis.</li>
                     </ul>
                 </div>
 
                 <Link href={`/applicant/test/${category.id}`} className="block w-full">
                     <button className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 rounded-lg shadow-md transition-all flex items-center justify-center gap-2">
-                        Start Assessment <ArrowRight className="ml-2" />
+                        Mulai <ArrowRight className="ml-2" />
                     </button>
                 </Link>
             </div>

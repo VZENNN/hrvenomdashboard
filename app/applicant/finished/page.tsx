@@ -20,19 +20,19 @@ export default function FinishedPage() {
             <div className="bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 p-6 rounded-full mb-6">
                 <CheckCircle size={64} />
             </div>
-            <h1 className="text-3xl font-bold mb-4">Assessment Complete</h1>
+            <h1 className="text-3xl font-bold mb-4">Psikotes Sudah Selesai</h1>
             <p className="text-slate-600 dark:text-slate-300 text-lg max-w-md mx-auto mb-8">
-                Thank you for completing the psychotest assessment. Your answers have been recorded.
+                Terima Kasih telah menyelesaikan Psikotes. Jawaban anda telah direkam.
                 <br /><br />
                 <span className="font-semibold text-purple-600 flex items-center justify-center gap-2">
                     {redirecting && <Loader2 className="animate-spin" size={16} />}
-                    Redirecting you to the next step...
+                    Kami akan mengarahkan anda ke halaman selanjutnya...
                 </span>
             </p>
 
             <Link href="/applicant/dashboard">
                 <button className="bg-slate-900 dark:bg-slate-700 text-white px-6 py-3 rounded-lg font-medium hover:opacity-90 text-sm">
-                    Return to Dashboard (Manual)
+                    Kembali ke Dashboard (Manual)
                 </button>
             </Link>
         </div>

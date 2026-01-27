@@ -13,12 +13,27 @@ export default function TestEngine({ category, userId }: { category: any, userId
     // Answers can be string (for MC/Essay) or object (for MOST_AND_LEAST)
     const [answers, setAnswers] = useState<Record<string, string | MostLeastAnswer>>({});
     const [submitting, setSubmitting] = useState(false);
+    const [shuffledQuestions, setShuffledQuestions] = useState<any[]>([]);
 
-    // Convert questions options to usable format if MC
-    const questions = category.questions.map((q: any) => ({
-        ...q,
-        options: q.options ? (Array.isArray(q.options) ? q.options : []) : null
-    }));
+    useEffect(() => {
+        // Process and shuffle questions on mount
+        const processedQuestions = category.questions.map((q: any) => ({
+            ...q,
+            options: q.options ? (Array.isArray(q.options) ? q.options : []) : null
+        }));
+
+        // Fisher-Yates Shuffle
+        const shuffled = [...processedQuestions];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+
+        setShuffledQuestions(shuffled);
+    }, [category.questions]);
+
+    // Use shuffled questions for display, or empty if not yet loaded (prevents hydration mismatch)
+    const questions = shuffledQuestions;
 
     const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -86,6 +101,10 @@ export default function TestEngine({ category, userId }: { category: any, userId
             return { ...prev, [qId]: updated };
         });
     };
+
+    if (questions.length === 0 && category.questions.length > 0) {
+        return <div className="p-12 text-center text-slate-500">Loading questions...</div>;
+    }
 
     return (
         <div className="max-w-4xl mx-auto pb-24">
