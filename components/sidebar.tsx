@@ -20,8 +20,8 @@ import {
 
 const menu = [
   { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
-  { name: "Karyawan", path: "/dashboard/employees", icon: Users },
   { name: "Departemen", path: "/dashboard/departments", icon: Building2 },
+  { name: "Karyawan", path: "/dashboard/employees", icon: Users },
   { name: "Kelola KPI", path: "/dashboard/kpi", icon: Target },
   { name: "Penilaian", path: "/dashboard/evaluation", icon: NotebookPen },
   { name: "Psikotes", path: "/dashboard/psychotest", icon: BrainCircuit },
