@@ -1,4 +1,5 @@
 import type { NextAuthConfig } from "next-auth"
+import { Role } from "@prisma/client"
 
 export const authConfig = {
     pages: {
@@ -45,17 +46,24 @@ export const authConfig = {
 
             return true;
         },
-        async jwt({ token, user }) {
+        async jwt({ token, user, trigger, session }) {
             if (user) {
-                token.id = user.id;
-                token.role = (user as any).role;
+                token.role = user.role;
+                token.departmentId = user.departmentId;
+                token.managedDepartmentIds = user.managedDepartmentIds;
+            }
+            // Support updating session on client side
+            if (trigger === "update" && session) {
+                token = { ...token, ...session }
             }
             return token;
         },
         async session({ session, token }) {
-            if (session.user) {
-                (session.user as any).id = token.id;
-                (session.user as any).role = token.role;
+            if (session?.user) {
+                session.user.id = token.sub as string;
+                session.user.role = token.role as Role;
+                session.user.departmentId = token.departmentId as string | null;
+                session.user.managedDepartmentIds = (token.managedDepartmentIds as string[]) || [];
             }
             return session;
         },

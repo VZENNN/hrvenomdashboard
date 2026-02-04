@@ -124,7 +124,7 @@ export default async function EmployeesPage({
                                             >
                                                 <Pencil size={16} />
                                             </Link>
-                                            <DeleteEmployeeButton id={emp.id} />
+                                            <DeleteEmployeeButton id={emp.id} userRole={session?.user?.role} />
                                         </div>
                                     </td>
                                 </tr>

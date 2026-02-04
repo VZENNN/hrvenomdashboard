@@ -22,9 +22,25 @@ export default async function EvaluationListPage({ searchParams }: {
 
     const monthFilter = params?.month ? Number(params.month) : null;
 
-    const where = monthFilter
+    const where: any = monthFilter
         ? { month: monthFilter }
         : {};
+
+    // RBAC: Restrict to Department(s)
+    if (session?.user?.role !== 'ADMIN') {
+        const allowedDeptIds = [
+            session?.user?.departmentId,
+            ...(session?.user?.managedDepartmentIds || [])
+        ].filter(Boolean) as string[];
+
+        if (allowedDeptIds.length > 0) {
+            where.user = {
+                departmentId: { in: allowedDeptIds }
+            };
+        } else {
+            where.user = { departmentId: '___unassigned___' };
+        }
+    }
 
 
     const totalItems = await prisma.evaluation.count({ where });

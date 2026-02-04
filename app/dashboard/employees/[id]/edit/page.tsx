@@ -4,8 +4,11 @@ import EditEmployeeForm from "@/components/forms/EditEmployeeForm";
 import { notFound } from "next/navigation";
 import { getEmployeeById } from "@/app/actions/employees";
 
+import { auth } from "@/auth";
+
 export default async function EditEmployeePage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
+    const session = await auth();
     const user = await getEmployeeById(id);
     if (!user) return notFound();
 
@@ -24,7 +27,7 @@ export default async function EditEmployeePage({ params }: { params: Promise<{ i
                 </div>
             </div>
 
-            <EditEmployeeForm user={user} departments={departments} managers={managers} />
+            <EditEmployeeForm user={user} departments={departments} managers={managers} viewerRole={session?.user?.role} />
         </div>
     );
 }

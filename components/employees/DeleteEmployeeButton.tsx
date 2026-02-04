@@ -6,7 +6,14 @@ import { toast } from "sonner";
 import { useState } from "react";
 import ConfirmModal from "@/components/ui/ConfirmDeleteModal";
 
-export default function DeleteEmployeeButton({ id }: { id: string }) {
+export default function DeleteEmployeeButton({ id, userRole }: { id: string; userRole?: string }) {
+  // Only Admin and Manager can delete
+  if (userRole !== 'ADMIN' && userRole !== 'MANAGER') return null;
+  // Actually, typically only ADMIN reduces risk. But USER said "Assign dept to manager...". 
+  // Let's stick to: SUPERVISOR cannot delete.
+  // Manager can delete? Prompt didn't explicitly forbid, but usually Managers can manage their own team.
+  // Let's allow Manager for now as per `app/actions/employees.ts` logic (Line 145: "Admin or Manager").
+
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
 

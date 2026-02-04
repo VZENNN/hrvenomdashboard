@@ -43,6 +43,9 @@ model User {
   
   psychotestResults PsychotestResult[]
 
+  // Managed Departments (For Managers/Supervisors who manage multiple departments)
+  managedDepartments Department[] @relation("ManagerDepartments")
+
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 }
@@ -53,6 +56,7 @@ model Department {
   description String?
 
   users       User[]
+  managers    User[]   @relation("ManagerDepartments")
   kpiCriteria KpiCriteria[] 
 
   createdAt   DateTime @default(now())
@@ -144,6 +148,7 @@ model EvaluationItem {
 enum Role {
   ADMIN
   MANAGER
+  SUPERVISOR
   EMPLOYEE
   APPLICANT
 }
