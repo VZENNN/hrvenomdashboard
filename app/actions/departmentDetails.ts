@@ -2,7 +2,24 @@
 
 import { prisma } from '@/lib/prisma';
 
+import { auth } from '@/auth';
+
 export async function getDepartmentWithEmployees(departmentId: string) {
+    const session = await auth();
+    const currentUser = session?.user;
+
+    // RBAC: If MANAGER, check if they have access to this department
+    if (currentUser?.role === 'MANAGER') {
+        const allowedIds = [
+            currentUser.departmentId,
+            ...(currentUser.managedDepartmentIds || [])
+        ].filter(Boolean) as string[];
+
+        if (!allowedIds.includes(departmentId)) {
+            return null;
+        }
+    }
+
     const department = await prisma.department.findUnique({
         where: { id: departmentId },
         include: {

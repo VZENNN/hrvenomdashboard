@@ -1,8 +1,15 @@
 import { getPsychotestCategories } from "@/app/actions/psychotest";
 import Link from "next/link";
 import { Plus, List, Settings, FileText } from "lucide-react";
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
 
 export default async function PsychotestDashboardPage() {
+    const session = await auth();
+    if (session?.user?.role === 'MANAGER') {
+        redirect('/dashboard');
+    }
+
     const categories = await getPsychotestCategories();
 
     return (

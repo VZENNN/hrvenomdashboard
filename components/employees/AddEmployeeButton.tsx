@@ -9,7 +9,9 @@ interface AddEmployeeButtonProps {
     userRole?: string;
 }
 
-export default function AddEmployeeButton({ userRole }: AddEmployeeButtonProps) {
+export default function AddEmployeeButton({ userRole }: { userRole?: string }) {
+    if (userRole === 'EMPLOYEE' || userRole === 'APPLICANT' || userRole === 'SUPERVISOR') return null;
+
     const isAdmin = userRole === "ADMIN";
 
     const handleUnauthorizedClick = () => {

@@ -46,6 +46,8 @@ export default function Sidebar({ user }: SidebarProps) {
 
   // Filter menu based on role
   const isEmployee = user?.role === 'EMPLOYEE';
+  const isSupervisor = user?.role === 'SUPERVISOR';
+  const isManager = user?.role === 'MANAGER'; // Explicit check if needed, but default covers it usually
 
   let displayedMenu = menu;
 
@@ -54,6 +56,21 @@ export default function Sidebar({ user }: SidebarProps) {
       { name: "Kalender", path: "/dashboard/calendar", icon: CalendarDays },
       { name: "My Evaluation", path: `/dashboard/employees/${user?.id}`, icon: NotebookPen },
     ];
+  }
+
+  if (isSupervisor) {
+    displayedMenu = [
+      { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
+      { name: "Karyawan", path: "/dashboard/employees", icon: Users }, // View own dept only
+      { name: "Penilaian", path: "/dashboard/evaluation", icon: NotebookPen }, // View/Evaluate own dept only
+      { name: "Kalender", path: "/dashboard/calendar", icon: CalendarDays },
+    ]
+  }
+
+  if (isManager) {
+    displayedMenu = displayedMenu.filter(item =>
+      item.name !== 'Psikotes' && item.name !== 'Kelola KPI'
+    );
   }
 
   return (

@@ -6,8 +6,15 @@ import DeleteKpiButton from '@/components/kpi/DeleteKpiButton';
 import Pagination from '@/components/ui/Pagination';
 import DepartmentFilter from '@/components/kpi/DepartmentFilter';
 import SortableHeader from '@/components/ui/SortableHeader';
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
 
 export default async function KpiListPage({ searchParams }: { searchParams: Promise<{ page?: string; dept?: string; sortBy?: string; order?: string }> }) {
+    const session = await auth();
+    if (session?.user?.role === 'MANAGER') {
+        redirect('/dashboard');
+    }
+
     const params = await searchParams;
     const currentPage = Number(params?.page) || 1;
     const itemsPerPage = 10;

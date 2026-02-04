@@ -8,8 +8,23 @@ export default async function CreateEvaluationPage() {
     const session = await auth();
 
     // List Users to Evaluate (Exclude self? Maybe allowed for test. Exclude Inactive)
+    const whereUser: any = { status: 'ACTIVE' };
+
+    if (session?.user?.role !== 'ADMIN') {
+        const allowedDeptIds = [
+            session?.user?.departmentId,
+            ...(session?.user?.managedDepartmentIds || [])
+        ].filter(Boolean) as string[];
+
+        if (allowedDeptIds.length > 0) {
+            whereUser.departmentId = { in: allowedDeptIds };
+        } else {
+            whereUser.departmentId = '___unassigned___';
+        }
+    }
+
     const users = await prisma.user.findMany({
-        where: { status: 'ACTIVE' },
+        where: whereUser,
         orderBy: { name: 'asc' }
     });
 

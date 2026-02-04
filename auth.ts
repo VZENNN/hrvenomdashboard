@@ -29,28 +29,36 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           return null;
         }
 
-        const { email, password } = parsed.data;
+        // The original code destructured email and password from parsed.data,
+        // but the requested change uses credentials.email and credentials.password directly.
+        // We will align with the requested change for the Prisma query and bcrypt.
+        // const { email, password } = parsed.data;
 
         const user = await prisma.user.findUnique({
-          where: { email },
+          where: { email: credentials.email as string }, // Use credentials.email directly
+          include: { managedDepartments: { select: { id: true } } } // Include managedDepartments
         });
 
         if (!user) {
-          throw new Error("Email tidak terdaftar.");
+          // Changed error handling to return null instead of throwing an error
+          return null;
         }
 
-        const isPasswordValid = await bcrypt.compare(password, user.password);
+        const passwordsMatch = await bcrypt.compare(credentials.password as string, user.password);
 
-        if (!isPasswordValid) {
-          throw new Error("Password salah.");
+        if (passwordsMatch) {
+          return {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            departmentId: user.departmentId,
+            managedDepartmentIds: user.managedDepartments.map(d => d.id) // Add managedDepartmentIds
+          };
         }
 
-        return {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-        };
+        // If passwords don't match, return null
+        return null;
       },
     }),
   ],
