@@ -122,6 +122,22 @@ export default function EvaluationWizard({ users, currentUserId, mode = 'create'
     };
 
     const handleSubmit = async () => {
+        // Validation: Ensure all scores are filled
+        const isBehavioralComplete = behavioralKpis.every(k => scores[k.id] && scores[k.id].score > 0);
+        const isTechnicalComplete = technicalKpis.every(k => 
+            scores[k.id] && 
+            scores[k.id].actual !== '' && 
+            scores[k.id].actual !== null && 
+            scores[k.id].actual !== undefined
+        );
+
+        if (!isBehavioralComplete || !isTechnicalComplete) {
+            toast.error("Peringatan", {
+                description: "Semua penilaian wajib diisi. Pastikan tidak ada nilai yang kosong sebelum submit."
+            });
+            return;
+        }
+
         setLoading(true);
         const items = [
             ...behavioralKpis.map(k => ({ ...scores[k.id], criteriaId: k.id, type: 'BEHAVIORAL' as const })),
