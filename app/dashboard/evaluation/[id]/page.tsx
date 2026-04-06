@@ -40,7 +40,7 @@ export default async function EvaluationDetailPage({ params }: { params: Promise
                     </div>
                 </div>
                 <div className="flex gap-2">
-                    {session?.user?.role === 'ADMIN' && (
+                    {['ADMIN', 'MANAGER', 'SUPERVISOR'].includes(session?.user?.role || '') && (
                         <Link
                             href={`/dashboard/evaluation/${evaluation.id}/edit`}
                             className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-800 transition-colors"

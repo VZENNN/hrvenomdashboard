@@ -173,9 +173,9 @@ type UpdateEvaluationInput = z.input<typeof UpdateEvaluationSchema>;
 export async function updateEvaluation(data: UpdateEvaluationInput) {
     const session = await auth();
 
-    // STRICT RBAC: Only ADMIN can edit
-    if (session?.user?.role !== 'ADMIN') {
-        return { error: "Unauthorized. Only Admins can edit evaluations." };
+    // STRICT RBAC: Only ADMIN, MANAGER, or SUPERVISOR can edit
+    if (!session?.user?.role || !['ADMIN', 'MANAGER', 'SUPERVISOR'].includes(session.user.role)) {
+        return { error: "Unauthorized. Only Admins, Managers, or Supervisors can edit evaluations." };
     }
 
     // 1. Validate Input
