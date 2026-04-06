@@ -9,8 +9,8 @@ import { ArrowLeft } from "lucide-react";
 export default async function EditEvaluationPage({ params }: { params: Promise<{ id: string }> }) {
     const session = await auth();
 
-    // STRICT RBAC: Only ADMIN can edit
-    if (session?.user?.role !== 'ADMIN') {
+    // STRICT RBAC: Only ADMIN, MANAGER, or SUPERVISOR can edit
+    if (!session?.user?.role || !['ADMIN', 'MANAGER', 'SUPERVISOR'].includes(session.user.role)) {
         redirect('/dashboard/evaluation');
     }
 
