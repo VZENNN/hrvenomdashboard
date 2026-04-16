@@ -19,6 +19,7 @@ const KpiSchema = z.object({
 
 export async function getKpiCriteria() {
     const kpis = await prisma.kpiCriteria.findMany({
+        where: { isActive: true },
         include: { department: true },
         orderBy: [{ type: 'asc' }, { category: 'asc' }, { title: 'asc' }]
     });
@@ -125,12 +126,13 @@ export async function deleteKpiCriteria(id: string) {
     }
 
     try {
-        await prisma.kpiCriteria.delete({
-            where: { id }
+        await prisma.kpiCriteria.update({
+            where: { id },
+            data: { isActive: false }
         });
     } catch (error) {
         console.error("Failed to delete KPI:", error);
-        return { error: "Failed to delete KPI. It might be in use by evaluations." };
+        return { error: "Failed to delete KPI." };
     }
 
     revalidatePath("/dashboard/kpi");

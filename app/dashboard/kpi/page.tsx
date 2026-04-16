@@ -24,7 +24,10 @@ export default async function KpiListPage({ searchParams }: { searchParams: Prom
 
     const departments = await prisma.department.findMany({ orderBy: { name: 'asc' } });
 
-    const where = deptFilter ? { departmentId: deptFilter } : {};
+    const where: any = { isActive: true };
+    if (deptFilter) {
+        where.departmentId = deptFilter;
+    }
     const totalItems = await prisma.kpiCriteria.count({ where });
     const totalPages = Math.ceil(totalItems / itemsPerPage);
 

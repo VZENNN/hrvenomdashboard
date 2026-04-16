@@ -17,7 +17,7 @@ export async function getEvaluationMetadata(userId: string) {
 
     // 1. Behavioral KPIs (Fixed / Global)
     const behavioral = await prisma.kpiCriteria.findMany({
-        where: { type: KpiType.BEHAVIORAL },
+        where: { type: KpiType.BEHAVIORAL, isActive: true },
         orderBy: [
             { category: 'asc' },
             { title: 'asc' }
@@ -31,6 +31,7 @@ export async function getEvaluationMetadata(userId: string) {
     const technical = await prisma.kpiCriteria.findMany({
         where: {
             type: KpiType.TECHNICAL,
+            isActive: true,
             departmentId: user.departmentId,
             OR: [
                 { position: user.position }, // Specific match
