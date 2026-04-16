@@ -5,8 +5,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
@@ -15,51 +15,51 @@ datasource db {
 // ==============================
 
 model User {
-  id          String      @id @default(cuid())
-  employeeId  String      @unique // NIK (contoh: SSA047)
-  email       String      @unique
-  password    String
-  name        String
-  
-  gender      Gender
-  status      EmployeeStatus @default(ACTIVE)
-  avatarUrl   String?
-  joinDate    DateTime?
-  
+  id         String @id @default(cuid())
+  employeeId String @unique // NIK (contoh: SSA047)
+  email      String @unique
+  password   String
+  name       String
+
+  gender    Gender
+  status    EmployeeStatus @default(ACTIVE)
+  avatarUrl String?
+  joinDate  DateTime?
+
   // Relasi Departemen & Jabatan
   departmentId String?
   department   Department? @relation(fields: [departmentId], references: [id])
-  position     String      // Jabatan (misal: Staff, Manager Retail)
+  position     String // Jabatan (misal: Staff, Manager Retail)
 
-  role        Role        @default(EMPLOYEE)
-  
+  role Role @default(EMPLOYEE)
+
   // Atasan (Penilai Default)
-  managerId   String?
-  manager     User?       @relation("UserManager", fields: [managerId], references: [id])
-  subordinates User[]     @relation("UserManager")
+  managerId    String?
+  manager      User?   @relation("UserManager", fields: [managerId], references: [id])
+  subordinates User[]  @relation("UserManager")
 
   evaluations Evaluation[] // Nilai yang dia terima
   appraisals  Evaluation[] @relation("Appraiser") // Nilai yang dia buat (sebagai atasan)
-  
+
   psychotestResults PsychotestResult[]
 
   // Managed Departments (For Managers/Supervisors who manage multiple departments)
   managedDepartments Department[] @relation("ManagerDepartments")
 
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Department {
-  id          String   @id @default(cuid())
-  name        String   @unique 
+  id          String  @id @default(cuid())
+  name        String  @unique
   description String?
 
   users       User[]
-  managers    User[]   @relation("ManagerDepartments")
-  kpiCriteria KpiCriteria[] 
+  managers    User[]        @relation("ManagerDepartments")
+  kpiCriteria KpiCriteria[]
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 }
 
 // ==============================
@@ -67,23 +67,25 @@ model Department {
 // ==============================
 
 model KpiCriteria {
-  id            String      @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   // Contoh: "Kedisiplinan Kerja" atau "Development Project"
-  category      String      
-  title         String      
-  description   String?     
-  
-  type          KpiType     @default(BEHAVIORAL)
-  
-  departmentId  String?     
-  department    Department? @relation(fields: [departmentId], references: [id])
+  category    String
+  title       String
+  description String?
+
+  type KpiType @default(BEHAVIORAL)
+
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
 
   // Jabatan Spesifik (Opsional). Jika null = berlaku satu departemen
-  position      String?
+  position String?
 
   // Bobot Default (Opsional, bisa di override di EvaluationItem)
-  defaultWeight Int         @default(0) 
+  defaultWeight Int @default(0)
+
+  isActive Boolean @default(true)
 
   evaluationItems EvaluationItem[]
 }
@@ -93,55 +95,54 @@ model KpiCriteria {
 // ==============================
 
 model Evaluation {
-  id          String   @id @default(cuid())
-  
-  userId      String   // Karyawan yang dinilai
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  appraiserId String   // Siapa penilainya
-  appraiser   User     @relation("Appraiser", fields: [appraiserId], references: [id])
-  
-  month       Int
-  year        Int
-  
+  id String @id @default(cuid())
+
+  userId String // Karyawan yang dinilai
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  appraiserId String // Siapa penilainya
+  appraiser   User   @relation("Appraiser", fields: [appraiserId], references: [id])
+
+  month Int
+  year  Int
+
   // Hasil Akhir (Section E PDF)
-  behaviorScore Float    // Rata-rata Bagian C (Skala 1-5)
-  technicalScore Float   // Total Bobot Bagian D (Skala 1-5)
-  finalScore    Float    // (Behavior * 40%) + (Technical * 60%)
-  
-  feedback    String?  @db.Text
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  items       EvaluationItem[]
+  behaviorScore  Float // Rata-rata Bagian C (Skala 1-5)
+  technicalScore Float // Total Bobot Bagian D (Skala 1-5)
+  finalScore     Float // (Behavior * 40%) + (Technical * 60%)
+
+  feedback String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items EvaluationItem[]
 
   @@unique([userId, month, year])
 }
 
 model EvaluationItem {
-  id            String      @id @default(cuid())
-  
-  evaluationId  String
-  evaluation    Evaluation  @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
-  
-  criteriaId    String
-  criteria      KpiCriteria @relation(fields: [criteriaId], references: [id])
-  
-  // Data Realisasi (Sesuai PDF Section D)
-  target        String?     
-  actual        String?     
-  
-  weight        Float       
-  score         Float       
+  id String @id @default(cuid())
 
-  comment       String?     
+  evaluationId String
+  evaluation   Evaluation @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+
+  criteriaId String
+  criteria   KpiCriteria @relation(fields: [criteriaId], references: [id])
+
+  // Data Realisasi (Sesuai PDF Section D)
+  target String?
+  actual String?
+
+  weight Float
+  score  Float
+
+  comment String?
 }
 
 // ==============================
 // 4. ENUMS
 // ==============================
-
 
 // ... existing code ...
 
@@ -164,8 +165,8 @@ enum EmployeeStatus {
 }
 
 enum KpiType {
-  BEHAVIORAL  // Untuk Bagian C (General)
-  TECHNICAL   // Untuk Bagian D (KPI)
+  BEHAVIORAL // Untuk Bagian C (General)
+  TECHNICAL // Untuk Bagian D (KPI)
 }
 
 // ==============================
@@ -173,26 +174,26 @@ enum KpiType {
 // ==============================
 
 model VenomDivision {
-  id        String   @id @default(cuid())
-  name      String
-  nodes     Json     // Stores React Flow nodes structure
-  edges     Json     // Stores React Flow edges structure
-  
+  id    String @id @default(cuid())
+  name  String
+  nodes Json // Stores React Flow nodes structure
+  edges Json // Stores React Flow edges structure
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model VenomCalendarEvent {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   title       String
   start       DateTime
   end         DateTime?
-  allDay      Boolean  @default(false)
+  allDay      Boolean   @default(false)
   description String?
   color       String?
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // ... existing code ...
@@ -208,45 +209,45 @@ enum QuestionType {
 }
 
 model PsychotestCategory {
-  id          String   @id @default(cuid())
+  id          String  @id @default(cuid())
   name        String
   description String?
-  timeLimit   Int      // in seconds
-  order       Int      @default(0) // Sequence order
-  
-  questions   PsychotestQuestion[]
-  results     PsychotestResult[]
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  timeLimit   Int // in seconds
+  order       Int     @default(0) // Sequence order
+
+  questions PsychotestQuestion[]
+  results   PsychotestResult[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model PsychotestQuestion {
-  id          String      @id @default(cuid())
-  content     String      @db.Text
-  image       String?     // URL to image
-  type        QuestionType @default(ESSAY)
-  options     Json?       // For MC: [{ label: "A", text: "..." }]
-  
-  categoryId  String
-  category    PsychotestCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id      String       @id @default(cuid())
+  content String       @db.Text
+  image   String? // URL to image
+  type    QuestionType @default(ESSAY)
+  options Json? // For MC: [{ label: "A", text: "..." }]
+
+  categoryId String
+  category   PsychotestCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model PsychotestResult {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  categoryId  String
-  category    PsychotestCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  
-  answers     Json     // { questionId: answer_value }
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  categoryId String
+  category   PsychotestCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  answers Json // { questionId: answer_value }
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([userId, categoryId])
 }
